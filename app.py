@@ -116,7 +116,7 @@ def run_game_app():
                 else:
                     for record in reversed(st.session_state.game_history):
                         st.markdown(f"- {record}")
-                st.markdown('</div>', unsafe_allow_html=True)
+#                st.markdown('</div>', unsafe_allow_html=True)
                 st.metric(label="Total Percobaan", value=st.session_state.game_attempts)
 #        st.markdown('</div>', unsafe_allow_html=True)
 
