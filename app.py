@@ -143,7 +143,7 @@ def run_portfolio_app():
 
     @st.cache_data
     def get_stock_data(tickers, start_date, end_date):
-        data = yf.download(tickers, start=start_date, end=end_date, progress=False)['Adj Close']
+        data = yf.download(tickers, start=start_date, end=end_date, progress=False)['Close']
         return data.dropna(axis=1)
 
     def calculate_portfolio_stats(weights, mean_returns, cov_matrix, risk_free_rate):
