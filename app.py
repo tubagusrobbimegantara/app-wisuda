@@ -87,14 +87,22 @@ def run_game_app():
                 if submit_button:
                     st.session_state.game_attempts += 1
                     secret = st.session_state.game_secret_number
-                    if guess < secret:
+                    if (guess - secret) <= -25:
                         st.session_state.game_message = f"Angka {guess} terlalu RENDAH! 📉"
                         st.session_state.game_message_class = "warning"
                         st.session_state.game_history.append(f"{guess} ➔ Terlalu Rendah")
-                    elif guess > secret:
+                    elif -25 < (guess - secret) < 0
+                        st.session_state.game_message = f"Angka {guess} Sedikit RENDAH! 📉, Ayo Semangat Sedikit Lagi!"
+                        st.session_state.game_message_class = "warning"
+                        st.session_state.game_history.append(f"{guess} ➔ Sedikit Rendah")
+                    elif (guess - secret) >= 25:
                         st.session_state.game_message = f"Angka {guess} terlalu TINGGI! 📈"
                         st.session_state.game_message_class = "warning"
                         st.session_state.game_history.append(f"{guess} ➔ Terlalu Tinggi")
+                    elif 0 < (guess - secret) < 25
+                        st.session_state.game_message = f"Angka {guess} Sedikit TINGGI! 📉, Ayo Semangat Sedikit Lagi!"
+                        st.session_state.game_message_class = "warning"
+                        st.session_state.game_history.append(f"{guess} ➔ Sedikit Tinggi")
                     else:
                         st.session_state.game_over = True
                         st.session_state.game_message = f"🎉 BENAR! Angkanya adalah {secret}!"
