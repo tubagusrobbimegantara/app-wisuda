@@ -129,137 +129,120 @@ def run_game_app():
 #        st.markdown('</div>', unsafe_allow_html=True)
 
 # ==============================================================================
-# APLIKASI 2: MANAJEMEN INVESTASI
+# APLIKASI 2: MANAJEMEN INVESTASI (REVISI TOTAL)
 # ==============================================================================
 def run_portfolio_app():
-    st.title("📈 Kalkulator Optimisasi Portofolio Saham")
-    st.markdown(
-        "Aplikasi ini membantu Anda membentuk portofolio saham yang optimal berdasarkan Model Markowitz. "
-        "Pilih profil risiko, modal, dan sektor saham yang Anda minati di menu sebelah kanan."
-    )
+    st.title("📈 Simulasi Optimisasi Portofolio Markowitz")
+    st.markdown("Aplikasi ini melakukan simulasi ribuan portofolio untuk memvisualisasikan **Efficient Frontier** dan menemukan alokasi optimal berdasarkan saham-saham pilihan Anda dari indeks LQ45.")
 
-    SEKTOR_SAHAM = {
-        "🏦 Keuangan": ["BBCA.JK", "BBRI.JK", "BMRI.JK", "BBNI.JK"],
-        "📦 Barang Konsumen Primer": ["ICBP.JK", "INDF.JK", "GGRM.JK", "HMSP.JK"],
-        "💻 Teknologi": ["GOTO.JK", "BUKA.JK", "EMTK.JK"],
-        "⚡️ Energi": ["ADRO.JK", "PTBA.JK", "PGAS.JK", "MEDC.JK"],
-        "🏭 Infrastruktur": ["TLKM.JK", "JSMR.JK", "WIKA.JK", "PGEO.JK"]
-    }
+    LQ45_TICKERS = sorted(["ACES.JK", "ADRO.JK", "AKRA.JK", "AMMN.JK", "AMRT.JK", "ARTO.JK", "ASII.JK", "BBCA.JK", "BBNI.JK", "BBRI.JK", "BMRI.JK", "BRIS.JK", "BRPT.JK", "BUKA.JK", "CPIN.JK", "EMTK.JK", "ESSA.JK", "EXCL.JK", "GGRM.JK", "GOTO.JK", "HRUM.JK", "ICBP.JK", "INCO.JK", "INDF.JK", "INDY.JK", "INKP.JK", "INTP.JK", "ITMG.JK", "JSMR.JK", "KLBF.JK", "MAPI.JK", "MBMA.JK", "MDKA.JK", "MEDC.JK", "PGAS.JK", "PGEO.JK", "PTBA.JK", "SMGR.JK", "SRTG.JK", "TLKM.JK", "TPIA.JK", "UNTR.JK", "UNVR.JK"])
 
     @st.cache_data
     def get_stock_data(tickers, start_date, end_date):
-        data_download = yf.download(tickers, start=start_date, end=end_date, progress=False)
-        if data_download.empty: return pd.DataFrame()
-        if len(tickers) == 1:
-            data = data_download[['Close']]
-            data.columns = tickers
-        else:
-            data = data_download['Close']
+        data = yf.download(tickers, start=start_date, end=end_date, progress=False)['Adj Close']
         return data.dropna(axis=1)
 
-    def hitung_portfolio_performance(weights, mean_returns, cov_matrix):
+    def calculate_portfolio_stats(weights, mean_returns, cov_matrix, risk_free_rate):
         returns = np.sum(mean_returns * weights) * 252
-        std = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights))) * np.sqrt(252)
-        return returns, std
+        volatility = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights))) * np.sqrt(252)
+        sharpe = (returns - risk_free_rate) / volatility if volatility > 0 else 0
+        return returns, volatility, sharpe
 
-    def minimize_volatility(weights, mean_returns, cov_matrix):
-        return hitung_portfolio_performance(weights, mean_returns, cov_matrix)[1]
-
-    def optimasi_markowitz(mean_returns, cov_matrix, target_return):
+    def run_monte_carlo_simulation(num_portfolios, mean_returns, cov_matrix, risk_free_rate):
         num_assets = len(mean_returns)
-        args = (mean_returns, cov_matrix)
-        constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1},
-                       {'type': 'eq', 'fun': lambda x: hitung_portfolio_performance(x, mean_returns, cov_matrix)[0] - target_return})
-        bounds = tuple((0, 1) for asset in range(num_assets))
-        initial_guess = num_assets * [1. / num_assets,]
-        result = minimize(minimize_volatility, initial_guess, args=args,
-                          method='SLSQP', bounds=bounds, constraints=constraints)
-        return result
+        results = np.zeros((3, num_portfolios))
+        weights_record = []
+        for i in range(num_portfolios):
+            weights = np.random.random(num_assets)
+            weights /= np.sum(weights)
+            weights_record.append(weights)
+            portfolio_return, portfolio_volatility, portfolio_sharpe = calculate_portfolio_stats(weights, mean_returns, cov_matrix, risk_free_rate)
+            results[0, i] = portfolio_return
+            results[1, i] = portfolio_volatility
+            results[2, i] = portfolio_sharpe
+        return results, weights_record
 
-    # Input pengguna dipindah ke main body agar tidak tercampur dengan navigasi
-    st.sidebar.header("⚙️ Parameter Investasi")
-    profil_risiko = st.sidebar.selectbox("1. Pilih Profil Risiko Anda:", ("Rendah", "Moderat", "Tinggi"))
-    modal = st.sidebar.number_input("2. Masukkan Modal Investasi (Rp):", min_value=1000000, step=1000000, value=100000000)
-    sektor_terpilih = st.sidebar.multiselect("3. Pilih Sektor Saham:", options=list(SEKTOR_SAHAM.keys()), default=["🏦 Keuangan", "⚡️ Energi"])
-    
-    if not sektor_terpilih:
-        st.warning("Mohon pilih minimal satu sektor saham.")
-    else:
-        tickers_pilihan = sorted([saham for sektor in sektor_terpilih for saham in SEKTOR_SAHAM[sektor]])
-        
-        if st.sidebar.button("🚀 Buat Rekomendasi Portofolio!", type="primary"):
-            with st.spinner("Mengambil data dan menghitung..."):
+    def optimize_portfolio(num_assets, mean_returns, cov_matrix, risk_free_rate, objective_func):
+        args = (mean_returns, cov_matrix, risk_free_rate)
+        constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+        bounds = tuple((0.0, 1.0) for _ in range(num_assets))
+        initial_guess = np.array(num_assets * [1. / num_assets,])
+        result = minimize(objective_func, initial_guess, args=args, method='SLSQP', bounds=bounds, constraints=constraints)
+        return result.x
+
+    st.sidebar.header("⚙️ Parameter Simulasi")
+    modal = st.sidebar.number_input("1. Modal Investasi (Rp)", min_value=1_000_000, step=1_000_000, value=100_000_000)
+    risk_free_rate = st.sidebar.number_input("2. Tingkat Bebas Risiko (%)", min_value=0.0, max_value=20.0, value=6.5, step=0.1, help="Gunakan acuan BI Rate atau imbal hasil obligasi pemerintah.") / 100
+    selected_tickers = st.sidebar.multiselect("3. Pilih Saham LQ45 (minimal 2)", options=LQ45_TICKERS, default=["BBCA.JK", "BBRI.JK", "TLKM.JK", "ASII.JK", "UNTR.JK"])
+    num_simulations = st.sidebar.select_slider("4. Jumlah Simulasi Portofolio", options=[1000, 5000, 10000, 20000], value=10000)
+
+    if st.sidebar.button("🚀 Jalankan Simulasi & Optimisasi!", type="primary"):
+        if len(selected_tickers) < 2:
+            st.sidebar.error("Mohon pilih minimal 2 saham.")
+        else:
+            with st.spinner("Mengambil data dan menjalankan ribuan simulasi... Ini mungkin butuh waktu sejenak."):
                 end_date = datetime.now()
-                start_date_insample = end_date - timedelta(days=3*365)
-                end_date_insample = end_date - timedelta(days=1*365)
-                start_date_outsample = end_date_insample
+                start_date = end_date - timedelta(days=3*365)
                 
-                stock_data_insample = get_stock_data(tickers_pilihan, start_date_insample, end_date_insample)
-                
-                if stock_data_insample.empty or stock_data_insample.shape[1] < 2:
-                    st.error("Data saham tidak cukup untuk optimisasi. Pastikan minimal ada 2 saham dengan data lengkap. Coba pilih sektor lain.")
-                    st.stop()
-
-                tickers = stock_data_insample.columns.tolist()
-                returns = stock_data_insample.pct_change().dropna()
+                data = get_stock_data(selected_tickers, start_date, end_date)
+                returns = data.pct_change().dropna()
                 mean_returns, cov_matrix = returns.mean(), returns.cov()
-                min_return, max_return = np.min(mean_returns) * 252, np.max(mean_returns) * 252
-                
-                if profil_risiko == 'Rendah': target_return = min_return + 0.2 * (max_return - min_return)
-                elif profil_risiko == 'Moderat': target_return = min_return + 0.5 * (max_return - min_return)
-                else: target_return = min_return + 0.8 * (max_return - min_return)
+                num_assets = len(data.columns)
 
-                result = optimasi_markowitz(mean_returns, cov_matrix, target_return)
+                # Jalankan simulasi Monte Carlo
+                mc_results, _ = run_monte_carlo_simulation(num_simulations, mean_returns, cov_matrix, risk_free_rate)
                 
-                if not result.success:
-                    st.error(f"Optimisasi gagal: {result.message}. Coba ubah pilihan.")
-                    st.stop()
-                    
-                bobot_optimal = result.x
-                exp_return, exp_volatility = hitung_portfolio_performance(bobot_optimal, mean_returns, cov_matrix)
-                sharpe_ratio = exp_return / exp_volatility if exp_volatility > 0 else 0
+                # Cari portofolio dengan Sharpe Ratio maksimal dari hasil simulasi
+                max_sharpe_idx = np.argmax(mc_results[2])
+                max_sharpe_ret, max_sharpe_vol = mc_results[0, max_sharpe_idx], mc_results[1, max_sharpe_idx]
+                
+                # Cari portofolio dengan Volatilitas minimum dari hasil simulasi
+                min_vol_idx = np.argmin(mc_results[1])
+                min_vol_ret, min_vol_vol = mc_results[0, min_vol_idx], mc_results[1, min_vol_idx]
 
-                st.header("✅ Rekomendasi Portofolio Optimal Anda")
-                col1, col2, col3 = st.columns(3)
-                col1.metric("Target Return Tahunan", f"{exp_return:.2%}")
-                col2.metric("Estimasi Risiko (Volatilitas)", f"{exp_volatility:.2%}")
-                col3.metric("Sharpe Ratio", f"{sharpe_ratio:.2f}")
+                # Optimisasi presisi untuk mendapatkan bobot yang akurat
+                weights_max_sharpe = optimize_portfolio(num_assets, mean_returns, cov_matrix, risk_free_rate, lambda w, m, c, rfr: -calculate_portfolio_stats(w, m, c, rfr)[2])
+                weights_min_vol = optimize_portfolio(num_assets, mean_returns, cov_matrix, risk_free_rate, lambda w, m, c, rfr: calculate_portfolio_stats(w, m, c, rfr)[1])
 
-                df_alokasi = pd.DataFrame({"Saham": tickers, "Bobot (%)": bobot_optimal * 100, "Alokasi Dana (Rp)": bobot_optimal * modal})
-                df_alokasi = df_alokasi[df_alokasi['Bobot (%)'] > 0.1].sort_values(by="Bobot (%)", ascending=False)
-                st.dataframe(df_alokasi.style.format({'Bobot (%)': '{:.2f}%', 'Alokasi Dana (Rp)': 'Rp {:,.0f}'}), use_container_width=True)
+                st.header("📊 Visualisasi Efficient Frontier")
+                st.markdown("Setiap titik mewakili satu kemungkinan portofolio. Warna yang lebih cerah menunjukkan **Sharpe Ratio** (return per unit risiko) yang lebih tinggi.")
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=mc_results[1], y=mc_results[0], mode='markers',
+                    marker=dict(color=mc_results[2], showscale=True, colorscale='Viridis', size=5, colorbar=dict(title='Sharpe Ratio')),
+                    name='Simulasi Portofolio'
+                ))
+                fig.add_trace(go.Scatter(x=[max_sharpe_vol], y=[max_sharpe_ret], mode='markers', marker=dict(symbol='star', color='red', size=15), name='Max Sharpe Ratio'))
+                fig.add_trace(go.Scatter(x=[min_vol_vol], y=[min_vol_ret], mode='markers', marker=dict(symbol='diamond', color='black', size=15), name='Min Volatility'))
+                fig.update_layout(title='Simulasi Portofolio & Batas Efisien', xaxis_title='Risiko (Volatilitas Tahunan)', yaxis_title='Return Tahunan', template='plotly_white', height=600)
+                st.plotly_chart(fig, use_container_width=True)
+
+                st.header("✅ Rekomendasi Alokasi Portofolio Optimal")
+                col1, col2 = st.columns(2)
+
+                def display_portfolio_details(container, title, weights, returns, cov, modal, rfr):
+                    exp_ret, exp_vol, exp_sharpe = calculate_portfolio_stats(weights, returns, cov, rfr)
+                    container.subheader(title)
+                    container.metric("Estimasi Return Tahunan", f"{exp_ret:.2%}")
+                    container.metric("Estimasi Risiko (Volatilitas)", f"{exp_vol:.2%}")
+                    container.metric("Sharpe Ratio", f"{exp_sharpe:.2f}")
+                    df = pd.DataFrame({"Saham": data.columns, "Bobot (%)": weights * 100, "Alokasi Dana (Rp)": weights * modal})
+                    df = df[df['Bobot (%)'] > 0.1].sort_values(by="Bobot (%)", ascending=False)
+                    container.dataframe(df.style.format({'Bobot (%)': '{:.2f}%', 'Alokasi Dana (Rp)': 'Rp {:,.0f}'}), use_container_width=True)
                 
-                st.header("🔬 Analisis Kinerja Portofolio (Uji Out-of-Sample)")
-                stock_data_outsample = get_stock_data(tickers, start_date_outsample, end_date)
-                ihsg_data = get_stock_data(['^JKSE'], start_date_outsample, end_date)
-                
-                if not stock_data_outsample.empty and not ihsg_data.empty:
-                    portfolio_returns = stock_data_outsample.pct_change().dropna().dot(bobot_optimal)
-                    cumulative_returns = (1 + portfolio_returns).cumprod() - 1
-                    ihsg_returns = ihsg_data.pct_change().dropna().iloc[:,0]
-                    cumulative_ihsg_returns = (1 + ihsg_returns).cumprod() - 1
-                    
-                    fig = go.Figure()
-                    fig.add_trace(go.Scatter(x=cumulative_returns.index, y=cumulative_returns.values * 100, mode='lines', name='Portofolio Optimal Anda'))
-                    fig.add_trace(go.Scatter(x=cumulative_ihsg_returns.index, y=cumulative_ihsg_returns.values * 100, mode='lines', name='IHSG (Benchmark)'))
-                    st.plotly_chart(fig, use_container_width=True)
-                    
-                    final_return, final_ihsg_return = cumulative_returns.iloc[-1], cumulative_ihsg_returns.iloc[-1]
-                    st.metric(f"Return Portofolio Anda (1 Tahun)", f"{final_return:.2%}", delta=f"{(final_return - final_ihsg_return):.2%} vs IHSG")
+                with col1:
+                    display_portfolio_details(st, "⭐ Portofolio Return Optimal (Max Sharpe Ratio)", weights_max_sharpe, mean_returns, cov_matrix, modal, risk_free_rate)
+                with col2:
+                    display_portfolio_details(st, "🛡️ Portofolio Risiko Terendah (Min Volatility)", weights_min_vol, mean_returns, cov_matrix, modal, risk_free_rate)
 
 
 # ==============================================================================
 # NAVIGASI UTAMA APLIKASI
 # ==============================================================================
 st.sidebar.title("Menu Utama")
-app_choice = st.sidebar.radio(
-    "Pilih Aplikasi:",
-    ("🔮 Game", "📈 Manajemen Investasi")
-)
+app_choice = st.sidebar.radio("Pilih Aplikasi:", ("📈 Manajemen Investasi", "🔮 Game"))
 st.sidebar.markdown("---")
 
-
-# Panggil fungsi aplikasi yang sesuai dengan pilihan
 if app_choice == "🔮 Game":
     run_game_app()
 elif app_choice == "📈 Manajemen Investasi":
