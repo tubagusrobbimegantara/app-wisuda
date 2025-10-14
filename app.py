@@ -110,7 +110,7 @@ def run_game_app():
             st.markdown(f'<div class="status-box {st.session_state.game_message_class}"><h3>{st.session_state.game_message}</h3></div>', unsafe_allow_html=True)
             st.subheader("Riwayat Tebakan")
             with st.container():
-                st.markdown('<div class="history-box">', unsafe_allow_html=True)
+#                st.markdown('<div class="history-box">', unsafe_allow_html=True)
                 if not st.session_state.game_history:
                     st.write("Belum ada tebakan.")
                 else:
