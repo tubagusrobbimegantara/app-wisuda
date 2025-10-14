@@ -129,13 +129,14 @@ def run_game_app():
 #        st.markdown('</div>', unsafe_allow_html=True)
 
 # ==============================================================================
-# APLIKASI 2: KALKULATOR PORTOFOLIO OPTIMAL (TANPA MONTE CARLO)
+# APLIKASI 2: KALKULATOR PORTOFOLIO OPTIMAL
 # ==============================================================================
 def run_portfolio_app():
     st.title("📈 Kalkulator Portofolio Saham Optimal")
     st.markdown(
-        "Aplikasi ini menggunakan optimisasi matematis (model Markowitz) untuk secara langsung menemukan "
-        "alokasi portofolio terbaik dengan **return per unit risiko (Sharpe Ratio) tertinggi**."
+        "Aplikasi ini menggunakan model Markowitz untuk menemukan alokasi portofolio terbaik. "
+        "Pilih saham-saham dari daftar LQ45, dan aplikasi akan mensimulasikan ribuan kemungkinan portofolio "
+        "untuk menemukan kombinasi dengan **return per unit risiko (Sharpe Ratio) tertinggi**."
     )
     st.write("---")
 
@@ -152,74 +153,67 @@ def run_portfolio_app():
         sharpe = (returns - risk_free_rate) / volatility if volatility > 0 else 0
         return returns, volatility, sharpe
 
-    def optimize_for_max_sharpe(mean_returns, cov_matrix, risk_free_rate):
-        """Menjalankan optimisasi untuk menemukan portofolio dengan Sharpe Ratio maksimal."""
+    def run_monte_carlo_simulation(num_portfolios, mean_returns, cov_matrix, risk_free_rate):
         num_assets = len(mean_returns)
-        
-        # Fungsi tujuan: kita ingin memaksimalkan Sharpe, jadi kita meminimalkan negatif Sharpe
-        def objective_function(weights):
-            return -calculate_portfolio_stats(weights, mean_returns, cov_matrix, risk_free_rate)[2]
+        results = np.zeros((3, num_portfolios))
+        weights_record = []
+        for i in range(num_portfolios):
+            weights = np.random.random(num_assets)
+            weights /= np.sum(weights)
+            weights_record.append(weights)
+            portfolio_return, portfolio_volatility, portfolio_sharpe = calculate_portfolio_stats(weights, mean_returns, cov_matrix, risk_free_rate)
+            results[0, i] = portfolio_return
+            results[1, i] = portfolio_volatility
+            results[2, i] = portfolio_sharpe
+        return results, weights_record
 
-        # Batasan: total bobot harus 100% (atau 1)
-        constraints = ({'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1})
-        # Batasan: bobot setiap saham harus antara 0 dan 1 (0% dan 100%)
-        bounds = tuple((0.0, 1.0) for _ in range(num_assets))
-        # Tebakan awal: bobot dibagi rata
-        initial_guess = np.array(num_assets * [1. / num_assets,])
-        
-        # Jalankan solver
-        result = minimize(objective_function, initial_guess, method='SLSQP', bounds=bounds, constraints=constraints)
-        return result.x
-
+    # --- Input di Sidebar dipindahkan ke sini ---
     st.sidebar.header("⚙️ Parameter Portofolio")
     modal = st.sidebar.number_input("1. Modal Investasi (Rp)", min_value=1_000_000, step=1_000_000, value=100_000_000)
     risk_free_rate = st.sidebar.number_input("2. Tingkat Bebas Risiko (%)", min_value=0.0, max_value=20.0, value=6.5, step=0.1, help="Gunakan acuan BI Rate.") / 100
     selected_tickers = st.sidebar.multiselect("3. Pilih Saham LQ45 (minimal 2)", options=LQ45_TICKERS, default=["BBCA.JK", "TLKM.JK", "BMRI.JK", "ASII.JK", "ADRO.JK"])
+    num_simulations = st.sidebar.select_slider("4. Jumlah Simulasi", options=[1000, 5000, 10000, 20000], value=10000)
 
     if st.sidebar.button("🚀 Hitung Portofolio Optimal!", type="primary"):
         if len(selected_tickers) < 2:
             st.sidebar.error("Mohon pilih minimal 2 saham.")
         else:
-            with st.spinner("Menghitung alokasi optimal..."):
+            with st.spinner(f"Menjalankan {num_simulations:,} simulasi..."):
                 end_date = datetime.now()
                 start_date = end_date - timedelta(days=3*365)
                 data = get_stock_data(selected_tickers, start_date, end_date)
                 returns = data.pct_change().dropna()
                 mean_returns, cov_matrix = returns.mean(), returns.cov()
+                mc_results, mc_weights = run_monte_carlo_simulation(num_simulations, mean_returns, cov_matrix, risk_free_rate)
                 
-                # Langsung hitung bobot optimal
-                optimal_weights = optimize_for_max_sharpe(mean_returns, cov_matrix, risk_free_rate)
-                
-                # Hitung statistik dari portofolio optimal
-                opt_return, opt_volatility, opt_sharpe = calculate_portfolio_stats(optimal_weights, mean_returns, cov_matrix, risk_free_rate)
+                max_sharpe_idx = np.argmax(mc_results[2])
+                max_sharpe_return = mc_results[0, max_sharpe_idx]
+                max_sharpe_volatility = mc_results[1, max_sharpe_idx]
+                optimal_weights = mc_weights[max_sharpe_idx]
+
+                st.header("📊 Visualisasi Efficient Frontier")
+                st.markdown("Setiap titik adalah satu kemungkinan portofolio. Warna yang lebih cerah menunjukkan **return per unit risiko** yang lebih tinggi. Titik bintang merah adalah portofolio paling optimal.")
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=mc_results[1], y=mc_results[0], mode='markers',
+                    marker=dict(color=mc_results[2], showscale=True, colorscale='Viridis', size=7, colorbar=dict(title='Sharpe Ratio'))
+                ))
+                fig.add_trace(go.Scatter(
+                    x=[max_sharpe_volatility], y=[max_sharpe_return], mode='markers',
+                    marker=dict(symbol='star', color='red', size=15), name='Portofolio Optimal'
+                ))
+                fig.update_layout(title='Simulasi Portofolio & Batas Efisien', xaxis_title='Risiko (Volatilitas Tahunan)', yaxis_title='Return Tahunan', template='plotly_white', height=600)
+                st.plotly_chart(fig, use_container_width=True)
 
                 st.header("✅ Rekomendasi Alokasi Portofolio Optimal")
                 col1, col2, col3 = st.columns(3)
-                col1.metric("Estimasi Return Tahunan", f"{opt_return:.2%}")
-                col2.metric("Estimasi Risiko (Volatilitas)", f"{opt_volatility:.2%}")
-                col3.metric("Sharpe Ratio", f"{opt_sharpe:.2f}")
+                col1.metric("Estimasi Return Tahunan", f"{max_sharpe_return:.2%}")
+                col2.metric("Estimasi Risiko (Volatilitas)", f"{max_sharpe_volatility:.2%}")
+                col3.metric("Sharpe Ratio", f"{mc_results[2, max_sharpe_idx]:.2f}")
 
                 df_alokasi = pd.DataFrame({"Saham": data.columns, "Bobot (%)": optimal_weights * 100, "Alokasi Dana (Rp)": optimal_weights * modal})
-                df_alokasi = df_alokasi[df_alokasi['Bobot (%)'] > 0.5].sort_values(by="Bobot (%)", ascending=False) # Tampilkan saham dengan bobot signifikan saja
-
-                st.subheader("Tabel Alokasi Dana")
+                df_alokasi = df_alokasi[df_alokasi['Bobot (%)'] > 0.1].sort_values(by="Bobot (%)", ascending=False)
                 st.dataframe(df_alokasi.style.format({'Bobot (%)': '{:.2f}%', 'Alokasi Dana (Rp)': 'Rp {:,.0f}'}), use_container_width=True)
-
-                st.subheader("Visualisasi Alokasi Bobot")
-                fig = go.Figure(data=[go.Bar(
-                    x=df_alokasi['Saham'],
-                    y=df_alokasi['Bobot (%)'],
-                    text=df_alokasi['Bobot (%)'].apply(lambda x: f'{x:.2f}%'),
-                    textposition='auto'
-                )])
-                fig.update_layout(
-                    title_text='Distribusi Bobot Saham dalam Portofolio Optimal',
-                    xaxis_title="Saham",
-                    yaxis_title="Bobot (%)",
-                    template="plotly_white"
-                )
-                st.plotly_chart(fig, use_container_width=True)
-
 
 # ==============================================================================
 # NAVIGASI UTAMA APLIKASI
@@ -231,6 +225,7 @@ app_choice = st.sidebar.radio(
 )
 st.sidebar.markdown("---")
 
+# Panggil fungsi aplikasi yang sesuai dengan pilihan
 if app_choice == "🔮 Game Tebak Angka":
     run_game_app()
 elif app_choice == "📈 Kalkulator Portofolio":
