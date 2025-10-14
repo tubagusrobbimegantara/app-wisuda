@@ -91,7 +91,7 @@ def run_game_app():
                         st.session_state.game_message = f"Angka {guess} terlalu RENDAH! 📉"
                         st.session_state.game_message_class = "warning"
                         st.session_state.game_history.append(f"{guess} ➔ Terlalu Rendah")
-                    elif -25 < (guess - secret) < 0
+                    elif -25 < (guess - secret) < 0:
                         st.session_state.game_message = f"Angka {guess} Sedikit RENDAH! 📉, Ayo Semangat Sedikit Lagi!"
                         st.session_state.game_message_class = "warning"
                         st.session_state.game_history.append(f"{guess} ➔ Sedikit Rendah")
@@ -99,7 +99,7 @@ def run_game_app():
                         st.session_state.game_message = f"Angka {guess} terlalu TINGGI! 📈"
                         st.session_state.game_message_class = "warning"
                         st.session_state.game_history.append(f"{guess} ➔ Terlalu Tinggi")
-                    elif 0 < (guess - secret) < 25
+                    elif 0 < (guess - secret) < 25:
                         st.session_state.game_message = f"Angka {guess} Sedikit TINGGI! 📉, Ayo Semangat Sedikit Lagi!"
                         st.session_state.game_message_class = "warning"
                         st.session_state.game_history.append(f"{guess} ➔ Sedikit Tinggi")
