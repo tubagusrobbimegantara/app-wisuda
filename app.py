@@ -76,7 +76,7 @@ def run_game_app():
     st.write("---")
 
     with st.container():
-        st.markdown('<div class="game-container">', unsafe_allow_html=True)
+ #       st.markdown('<div class="game-container">', unsafe_allow_html=True)
         col1, col2 = st.columns([1.5, 2])
         with col1:
             st.subheader("Ayo Tebak!")
@@ -118,7 +118,7 @@ def run_game_app():
                         st.markdown(f"- {record}")
                 st.markdown('</div>', unsafe_allow_html=True)
                 st.metric(label="Total Percobaan", value=st.session_state.game_attempts)
-        st.markdown('</div>', unsafe_allow_html=True)
+#        st.markdown('</div>', unsafe_allow_html=True)
 
 # ==============================================================================
 # APLIKASI 2: MANAJEMEN INVESTASI
