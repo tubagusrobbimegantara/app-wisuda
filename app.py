@@ -250,29 +250,24 @@ def run_fractal_app():
     st.markdown("Jelajahi pola **fraktal klasik dan modern** yang muncul dari aturan sederhana namun menghasilkan keindahan kompleks ✨.")
     
     col1, col2 = st.columns([1, 1])
+
     with col1:
         fractal_type = st.selectbox(
             "🌀 Pilih Jenis Fraktal",
-            ("Segitiga Sierpinski", "Kapal Terbakar", "Mandelbrot Klasik", "Dragon Curve", "Koch Snowflake", "Pohon Fraktal")
+            ("Segitiga Sierpinski", "Pohon Fraktal", "Koch Snowflake", "Dragon Curve", "Kapal Terbakar", "Mandelbrot Klasik")
         )
     with col2:
-        # --- SLIDER ADAPTIF ---
+        # Slider Cerdas yang menyesuaikan rentang nilai
         if fractal_type in ["Mandelbrot Klasik", "Kapal Terbakar"]:
-            iterations = st.slider("🔁 Jumlah Iterasi / Detail", 20, 300, 75, 10)
+            iterations = st.slider("🔁 Jumlah Iterasi", 20, 300, 75, 10)
         elif fractal_type == "Segitiga Sierpinski":
             iterations = st.slider("🔁 Kepadatan Titik", 1, 10, 6, 1)
         elif fractal_type == "Dragon Curve":
-            iterations = st.slider("🔁 Jumlah Iterasi", 1, 17, 10, 1)
+            iterations = st.slider("🔁 Jumlah Lipatan", 1, 16, 12, 1)
         elif fractal_type == "Koch Snowflake":
-            iterations = st.slider("🔁 Tingkat Rekursi", 0, 6, 4, 1)
+            iterations = st.slider("🔁 Tingkat Detail", 0, 6, 4, 1)
         elif fractal_type == "Pohon Fraktal":
             iterations = st.slider("🔁 Kedalaman Ranting", 1, 11, 8, 1)
-
-        color_scheme = st.selectbox(
-            "🎨 Skema Warna",
-            ("Plasma", "Viridis", "Cividis", "Inferno", "Turbo", "Rainbow", "Cyan", "LightGreen"),
-            index=0 # Default ke Plasma
-        )
 
     @st.cache_data
     def generate_fractal(width, height, max_iter, type):
@@ -281,21 +276,21 @@ def run_fractal_app():
             p = np.array([random.uniform(0, width), random.uniform(0, height)])
             image_data = np.zeros((height, width))
             for _ in range(max_iter * 50000):
-                target_vertex = random.choice(points)
-                p = (p + target_vertex) / 2
+                target_vertex = random.choice(points); p = (p + target_vertex) / 2
                 x, y = int(p[0]), int(p[1])
                 if 0 <= x < width and 0 <= y < height: image_data[y, x] = 1
-            return image_data
+            return "heatmap", image_data
+
         elif type in ["Mandelbrot Klasik", "Kapal Terbakar"]:
             x, y = np.linspace(-2, 2, width), np.linspace(-2, 2, height)
             c = x[:, np.newaxis] + 1j * y[np.newaxis, :]; z = np.zeros_like(c, dtype=complex)
             output = np.zeros(c.shape)
             for it in range(max_iter):
-                not_diverged = np.abs(z) < 10
-                output[not_diverged] = it
+                not_diverged = np.abs(z) < 10; output[not_diverged] = it
                 if type == "Mandelbrot Klasik": z[not_diverged] = z[not_diverged] ** 2 + c[not_diverged]
                 else: z_abs = np.abs(z[not_diverged].real) + 1j * np.abs(z[not_diverged].imag); z[not_diverged] = z_abs ** 2 + c[not_diverged]
-            return output
+            return "heatmap", output
+
         elif type == "Dragon Curve":
             axiom, rules = "FX", {"X": "X+YF+", "Y": "-FX-Y"}
             path = axiom
@@ -306,7 +301,8 @@ def run_fractal_app():
                 if cmd == "F": x += math.cos(math.radians(angle)); y += math.sin(math.radians(angle)); coords.append((x, y))
                 elif cmd == "+": angle += 90
                 elif cmd == "-": angle -= 90
-            return np.array(coords)
+            return "lines", np.array(coords)
+
         elif type == "Koch Snowflake":
             def koch_curve(p1, p2, depth):
                 if depth == 0: return [p1, p2]
@@ -316,34 +312,35 @@ def run_fractal_app():
                 return koch_curve(p1, pA, depth - 1)[:-1] + koch_curve(pA, pC, depth - 1)[:-1] + koch_curve(pC, pB, depth - 1)[:-1] + koch_curve(pB, p2, depth - 1)
             p1, p2, p3 = [0, 0.288], [1, 0.288], [0.5, 1.154]
             points = koch_curve(p1, p2, max_iter)[:-1] + koch_curve(p2, p3, max_iter)[:-1] + koch_curve(p3, p1, max_iter)[:-1]
-            return np.array(points)
+            return "lines", np.array(points)
+
         elif type == "Pohon Fraktal":
             lines = []
             def draw_tree(x1, y1, angle, depth):
                 if depth > 0:
-                    x2 = x1 + int(math.cos(math.radians(angle)) * depth * 10.0)
-                    y2 = y1 + int(math.sin(math.radians(angle)) * depth * 10.0)
+                    x2 = x1 + math.cos(math.radians(angle)) * depth * 10.0
+                    y2 = y1 + math.sin(math.radians(angle)) * depth * 10.0
                     lines.append(((x1, y1), (x2, y2)))
-                    draw_tree(x2, y2, angle - 20, depth - 1)
-                    draw_tree(x2, y2, angle + 20, depth - 1)
-            draw_tree(width // 2, height, -90, max_iter)
-            return lines
-
-    with st.spinner(f"🧠 Membuat '{fractal_type}' dengan {iterations} iterasi..."):
+                    draw_tree(x2, y2, angle - 25, depth - 1) # Sudut diubah agar lebih menarik
+                    draw_tree(x2, y2, angle + 25, depth - 1)
+            draw_tree(width // 2, 0, 90, max_iter)
+            return "segments", lines
+    
+    with st.spinner(f"🧠 Membuat '{fractal_type}'..."):
         width, height = 800, 800
-        data = generate_fractal(width, height, iterations, fractal_type)
+        render_mode, data = generate_fractal(width, height, iterations, fractal_type)
         fig = go.Figure()
 
-        if fractal_type in ["Segitiga Sierpinski", "Mandelbrot Klasik", "Kapal Terbakar"]:
-            fig.add_trace(go.Heatmap(z=data, colorscale=color_scheme, showscale=False))
-        elif fractal_type in ["Dragon Curve", "Koch Snowflake"]:
-            fig.add_trace(go.Scatter(x=data[:, 0], y=data[:, 1], mode='lines', line=dict(color=color_scheme if not color_scheme in ["Cyan", "LightGreen"] else "cyan", width=1)))
-        elif fractal_type == "Pohon Fraktal":
+        if render_mode == "heatmap":
+            fig.add_trace(go.Heatmap(z=data, colorscale='Plasma', showscale=False))
+        elif render_mode == "lines":
+            fig.add_trace(go.Scatter(x=data[:, 0], y=data[:, 1], mode='lines', line=dict(color='cyan', width=1.5)))
+        elif render_mode == "segments":
             all_x, all_y = [], []
             for (x1, y1), (x2, y2) in data:
                 all_x.extend([x1, x2, None])
                 all_y.extend([y1, y2, None])
-            fig.add_trace(go.Scatter(x=all_x, y=all_y, mode='lines', line=dict(color=color_scheme if not color_scheme in ["Cyan", "LightGreen"] else "lightgreen", width=1)))
+            fig.add_trace(go.Scatter(x=all_x, y=all_y, mode='lines', line=dict(color='lightgreen', width=1.5)))
         
         fig.update_layout(title=f"Fraktal: {fractal_type}", xaxis_visible=False, yaxis_visible=False, height=600, template='plotly_dark', showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
