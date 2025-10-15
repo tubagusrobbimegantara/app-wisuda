@@ -41,10 +41,7 @@ def run_game_app():
                 transform: scale(1.05);
                 box-shadow: 7px 7px 15px #1c1c1c, -7px -7px 15px #2e2e2e;
             }
-            .score-box {
-                background-color: #252525; text-align: center; padding: 1rem;
-                border-radius: 15px; border: 1px solid #444;
-            }
+
             .game-message {
                 text-align: center;
                 font-size: 1.2rem;
