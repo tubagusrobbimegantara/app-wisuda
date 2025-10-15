@@ -18,7 +18,7 @@ st.set_page_config(
 )
 
 # ==============================================================================
-# APLIKASI UTAMA: GAME TEBAK ANGKA (KODE DIPERBAIKI)
+# APLIKASI UTAMA: GAME TEBAK ANGKA (DENGAN ALERT TOAST)
 # ==============================================================================
 def run_game_app():
     # --- CSS Kustom untuk Tampilan Game Modern ---
@@ -26,7 +26,16 @@ def run_game_app():
         <style>
             .main > div { padding-top: 2rem; }
             .block-container { padding-top: 2rem; }
- 
+            .game-container {
+                background: linear-gradient(145deg, #2b2b2b, #1e1e1e);
+                padding: 2rem; border-radius: 20px;
+                box-shadow: 10px 10px 20px #1c1c1c, -10px -10px 20px #2e2e2e;
+                color: #e0e0e0;
+                min-height: 250px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
             .stNumberInput input {
                 background-color: #333; color: #fff; border: 2px solid #555;
                 border-radius: 10px; text-align: center; font-size: 2rem; font-weight: bold;
@@ -41,7 +50,10 @@ def run_game_app():
                 transform: scale(1.05);
                 box-shadow: 7px 7px 15px #1c1c1c, -7px -7px 15px #2e2e2e;
             }
-
+            .score-box {
+                background-color: #252525; text-align: center; padding: 1rem;
+                border-radius: 15px; border: 1px solid #444;
+            }
             .game-message {
                 text-align: center;
                 font-size: 1.2rem;
@@ -92,16 +104,19 @@ def run_game_app():
                 difference = abs(guess - secret)
 
                 if guess < secret:
-                    if difference > 5:
+                    st.toast("Terlalu Rendah!", icon="📉") # ALERT BARU
+                    if difference > 15:
                         st.session_state.message = f"Masih terlalu jauh! Angka {guess} **sangat RENDAH** 🥶"
                     else:
                         st.session_state.message = f"Anda semakin dekat! Tapi {guess} masih terlalu **rendah** 🤔"
                 elif guess > secret:
-                    if difference > 5:
+                    st.toast("Terlalu Tinggi!", icon="📈") # ALERT BARU
+                    if difference > 15:
                         st.session_state.message = f"Masih terlalu jauh! Angka {guess} **sangat TINGGI** 🔥"
                     else:
                         st.session_state.message = f"Anda semakin dekat! Tapi {guess} masih terlalu **tinggi** 🤔"
                 else:
+                    st.toast("Tepat Sasaran!", icon="🎯") # ALERT BARU
                     st.session_state.game_over = True
                     st.session_state.message = f"🎉 Selamat! Kamu berhasil menebak angka **{secret}**!"
                     if st.session_state.attempts < st.session_state.high_score:
