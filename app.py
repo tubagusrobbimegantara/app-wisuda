@@ -92,12 +92,12 @@ def run_game_app():
                 difference = abs(guess - secret)
 
                 if guess < secret:
-                    if difference > 15:
+                    if difference > 5:
                         st.session_state.message = f"Masih terlalu jauh! Angka {guess} **sangat RENDAH** 🥶"
                     else:
                         st.session_state.message = f"Anda semakin dekat! Tapi {guess} masih terlalu **rendah** 🤔"
                 elif guess > secret:
-                    if difference > 15:
+                    if difference > 5:
                         st.session_state.message = f"Masih terlalu jauh! Angka {guess} **sangat TINGGI** 🔥"
                     else:
                         st.session_state.message = f"Anda semakin dekat! Tapi {guess} masih terlalu **tinggi** 🤔"
