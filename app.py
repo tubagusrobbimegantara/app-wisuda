@@ -11,6 +11,7 @@ import plotly.graph_objects as go
 from datetime import datetime
 
 # --- Konfigurasi Halaman Utama ---
+# --- Konfigurasi Halaman Utama ---
 st.set_page_config(
     page_title="Arena Game & Analisis",
     page_icon="🎮",
@@ -145,11 +146,10 @@ def run_game_app():
 
 
 # ==============================================================================
-# APLIKASI 2: ANALISIS PORTOFOLIO
+# APLIKASI 1: ANALISIS PORTOFOLIO (Tidak Ada Perubahan)
 # ==============================================================================
 def run_portfolio_app():
     st.title("📈 Analisis & Backtesting Portofolio Saham")
-    # ... (Kode Portofolio tetap sama seperti sebelumnya) ...
     st.markdown("Aplikasi ini mengoptimalkan alokasi portofolio pada data **In-Sample (2015-2023)** dan menguji kinerjanya pada data **Out-of-Sample (2024-sekarang)** dengan membandingkannya terhadap **IHSG**.")
     st.write("---")
     LQ45_TICKERS = sorted(["ACES.JK", "ADRO.JK", "AKRA.JK", "AMMN.JK", "AMRT.JK", "ARTO.JK", "ASII.JK", "BBCA.JK", "BBNI.JK", "BBRI.JK", "BMRI.JK", "BRIS.JK", "BRPT.JK", "BUKA.JK", "CPIN.JK", "EMTK.JK", "ESSA.JK", "EXCL.JK", "GGRM.JK", "GOTO.JK", "HRUM.JK", "ICBP.JK", "INCO.JK", "INDF.JK", "INDY.JK", "INKP.JK", "INTP.JK", "ITMG.JK", "JSMR.JK", "KLBF.JK", "MAPI.JK", "MBMA.JK", "MDKA.JK", "MEDC.JK", "PGAS.JK", "PGEO.JK", "PTBA.JK", "SMGR.JK", "SRTG.JK", "TLKM.JK", "TPIA.JK", "UNTR.JK", "UNVR.JK"])
@@ -229,10 +229,9 @@ def run_portfolio_app():
                 st.plotly_chart(fig, use_container_width=True)
 
 # ==============================================================================
-# APLIKASI 3: PANEN BERKELANJUTAN
+# APLIKASI 2: PANEN BERKELANJUTAN
 # ==============================================================================
 def run_harvesting_app():
-    # ... (Kode Panen Berkelanjutan tetap sama seperti sebelumnya) ...
     st.title("🐄 Simulasi Panen Ternak Berkelanjutan")
     st.markdown("Aplikasi ini mensimulasikan dampak panen tahunan terhadap populasi ternak. Gunakan model ini untuk menentukan apakah tingkat panen Anda berkelanjutan atau akan menyebabkan kepunahan.")
     st.write("---")
@@ -269,10 +268,9 @@ def run_harvesting_app():
         st.info(f"💡 **Rekomendasi panen optimal** (MSY) untuk parameter ini adalah **{msy:,.0f} ekor/tahun**. Ini adalah jumlah panen terbanyak yang bisa dilakukan setiap tahun agar populasi tetap lestari dalam jangka panjang.")
 
 # ==============================================================================
-# APLIKASI 4: GEOMETRI FRAKTAL
+# APLIKASI 3: GEOMETRI FRAKTAL (DIMODIFIKASI UNTUK SEGITIGA SIERPINSKI)
 # ==============================================================================
 def run_fractal_app():
-    # ... (Kode Geometri Fraktal tetap sama seperti sebelumnya) ...
     st.title("🎨 Visualisasi Fraktal Bernuansa Batik")
     st.markdown("Jelajahi keindahan matematika fraktal dengan visualisasi yang terinspirasi dari corak dan warna batik. Pilih jenis fraktal untuk melihat pola unik yang dihasilkan.")
     
@@ -288,62 +286,97 @@ def run_fractal_app():
         else:
             iterations = st.slider("Jumlah Iterasi (Detail)", 20, 300, 75, 10, help="Semakin tinggi, semakin detail polanya.")
 
+    # --- Fungsi Generator Fraktal ---
     @st.cache_data
     def generate_fractal(width, height, max_iter, type):
         if type == "Segitiga Sierpinski":
-            points = np.array([[width/2, 0], [0, height], [width, height]])
+            # Menggunakan metode "Chaos Game" untuk Sierpinski
+            points = np.array([[width/2, 0], [0, height], [width, height]]) # Titik-titik sudut segitiga awal
+            
+            # Titik awal sembarang di dalam segitiga
             p = np.array([random.uniform(0, width), random.uniform(0, height)])
+            
             image_data = np.zeros((height, width))
-            for _ in range(max_iter * 5000):
+            
+            for _ in range(max_iter * 5000): # Jumlah titik untuk menggambar fraktal
                 target_vertex = random.choice(points)
-                p = (p + target_vertex) / 2
-                x_coord, y_coord = int(p[0]), int(p[1])
+                p = (p + target_vertex) / 2 # Ambil titik tengah antara titik saat ini dan sudut acak
+                
+                # Pastikan koordinat ada di dalam batas gambar
+                x_coord = int(p[0])
+                y_coord = int(p[1])
                 if 0 <= x_coord < width and 0 <= y_coord < height:
-                    image_data[y_coord, x_coord] = 1
+                    image_data[y_coord, x_coord] = 1 # Tandai piksel
+            
             return image_data
-        else:
-            x, y = np.linspace(-2, 2, width), np.linspace(-2, 2, height)
-            c = x[:, np.newaxis] + 1j * y[np.newaxis, :]; z = np.zeros_like(c, dtype=complex)
+
+        else: # Mandelbrot dan Burning Ship
+            x = np.linspace(-2, 2, width)
+            y = np.linspace(-2, 2, height)
+            c = x[:, np.newaxis] + 1j * y[np.newaxis, :]
+            z = np.zeros_like(c, dtype=complex)
             output = np.zeros(c.shape)
+            
             for it in range(max_iter):
-                not_diverged = np.abs(z) < 10
-                output[not_diverged] = it
+                not_diverged = np.abs(z) < 10 # Batas divergensi
+                output[not_diverged] = it # Catat iterasi sebelum divergensi
+                
                 if type == "Mandelbrot Klasik":
                     z[not_diverged] = z[not_diverged]**2 + c[not_diverged]
                 elif type == "Kapal Terbakar (Seperti Batik)":
                     z_abs = np.abs(z[not_diverged].real) + 1j * np.abs(z[not_diverged].imag)
                     z[not_diverged] = z_abs**2 + c[not_diverged]
+
             return output
+
     with st.spinner(f"Menciptakan '{fractal_type}' dengan {iterations} iterasi..."):
+        # Ukuran gambar yang konsisten
         img_width, img_height = 800, 800 
         fractal_data = generate_fractal(img_width, img_height, iterations, fractal_type)
-        batik_colors = [[0.0, 'rgb(75, 56, 42)'],[0.2, 'rgb(139, 90, 43)'],[0.5, 'rgb(234, 224, 213)'],[0.8, 'rgb(46, 64, 87)'],[1.0, 'rgb(15, 23, 42)']]
-        fig = go.Figure(data=go.Heatmap(z=fractal_data, colorscale=batik_colors, showscale=False))
-        fig.update_layout(title=f"Fraktal: {fractal_type}", xaxis_visible=False, yaxis_visible=False, height=600)
+        
+        # --- Palet Warna Batik ---
+        batik_colors = [
+            [0.0, 'rgb(75, 56, 42)'],      # Coklat Tua
+            [0.2, 'rgb(139, 90, 43)'],     # Coklat Kayu
+            [0.5, 'rgb(234, 224, 213)'],   # Krem / Off-white
+            [0.8, 'rgb(46, 64, 87)'],      # Biru Nila
+            [1.0, 'rgb(15, 23, 42)']       # Biru Sangat Tua
+        ]
+
+        fig = go.Figure(data=go.Heatmap(
+            z=fractal_data,
+            colorscale=batik_colors,
+            showscale=False
+        ))
+        fig.update_layout(
+            title=f"Fraktal: {fractal_type}",
+            xaxis_visible=False,
+            yaxis_visible=False,
+            height=600
+        )
         st.plotly_chart(fig, use_container_width=True)
 
 
 # ==============================================================================
 # NAVIGASI UTAMA APLIKASI
 # ==============================================================================
-st.sidebar.title("🎮 Menu Utama")
-# Jadikan Game sebagai pilihan pertama/default
+st.sidebar.title("Menu Utama")
 app_choice = st.sidebar.radio(
     "Pilih Aplikasi:",
-    ("🔮 Arena Tebak Angka",
-     "📈 Analisis Portofolio", 
+    ("📈 Analisis Portofolio", 
      "🐄 Panen Berkelanjutan",
-     "🎨 Geometri Fraktal (Batik)")
+     "🎨 Geometri Fraktal (Batik)", # Nama di menu diubah
+     "🔮 Game Tebak Angka")
 )
 st.sidebar.markdown("---")
 st.sidebar.image("https://www.ukri.ac.id/storage/upload/file/conten/file_1689928528lambang_foto_conten_.png", width=100)
-st.sidebar.info("Dashboard Analisis & Game.")
+st.sidebar.info("Dashboard Analisis Interaktif.")
 
-if app_choice == "🔮 Arena Tebak Angka":
-    run_game_app()
-elif app_choice == "📈 Analisis Portofolio":
+if app_choice == "📈 Analisis Portofolio":
     run_portfolio_app()
 elif app_choice == "🐄 Panen Berkelanjutan":
     run_harvesting_app()
 elif app_choice == "🎨 Geometri Fraktal (Batik)":
     run_fractal_app()
+elif app_choice == "🔮 Game Tebak Angka":
+    run_game_app()
