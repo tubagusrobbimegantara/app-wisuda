@@ -22,7 +22,7 @@ st.set_page_config(
 # ==============================================================================
 def run_game_app():
     # --- CSS Kustom untuk Tampilan Game Modern ---
-    st.markdown("""
+    st.markdown(""
 
     if 'secret_number' not in st.session_state:
         st.session_state.secret_number = random.randint(1, 100)
