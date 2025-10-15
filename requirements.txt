@@ -4,5 +4,3 @@ numpy
 scipy
 yfinance
 plotly
-BytesIO
-xlsxwriter
