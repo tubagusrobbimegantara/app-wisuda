@@ -18,33 +18,7 @@ st.set_page_config(
 )
 
 # ==============================================================================
-# APLIKASI UTAMA: GAME TEBAK ANGKA (DENGAN ALERT TOAST)
-# ==============================================================================
-
-# ==============================================================================
-# APLIKASI UTAMA: GAME TEBAK ANGKA (DENGAN DESAIN BARU DARI ANDA)
-# ==============================================================================
-import streamlit as st
-import random
-import time
-from io import BytesIO
-
-# Pustaka untuk Portofolio, Fraktal, & Harvesting
-import yfinance as yf
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-from datetime import datetime
-
-# --- Konfigurasi Halaman Utama ---
-st.set_page_config(
-    page_title="Arena Game & Analisis",
-    page_icon="🎮",
-    layout="wide"
-)
-
-# ==============================================================================
-# APLIKASI UTAMA: GAME TEBAK ANGKA (DENGAN DESAIN BARU DARI ANDA)
+# APLIKASI UTAMA: GAME TEBAK ANGKA (DENGAN ENTER & TANPA SCOREBOX)
 # ==============================================================================
 def run_game_app():
     # --- CSS Modern UI (Glassmorphism & Neon Glow) ---
@@ -76,13 +50,6 @@ def run_game_app():
         }
         .game-box:hover {
             box-shadow: 0 0 40px rgba(0,255,255,0.2);
-        }
-        .score-panel {
-            text-align: center;
-            background: rgba(255,255,255,0.05);
-            padding: 1.5rem;
-            border-radius: 15px;
-            border: 1px solid rgba(255,255,255,0.1);
         }
         .stButton>button {
             background: linear-gradient(135deg, #00d4ff, #007bff);
@@ -118,57 +85,56 @@ def run_game_app():
 
     # Header
     st.markdown("<h1 class='main-title'>🎮 Arena Tebak Angka 🔮</h1>", unsafe_allow_html=True)
+    
+    # Menampilkan skor secara ringkas di tengah
+    st.markdown(f"<div style='text-align: center; font-size: 1.1rem; margin-bottom: 20px;'>Percobaan: <b>{st.session_state.attempts}</b> | Rekor Terbaik: <b>{st.session_state.high_score}</b> 🏆</div>", unsafe_allow_html=True)
+
     st.write("Tebak angka rahasia antara **1 dan 100**. Coba capai rekor **percobaan paling sedikit!**")
     st.divider()
 
-    col1, col2 = st.columns([2, 1], gap="large")
+    # --- Layout Utama (Disederhanakan tanpa kolom) ---
+    st.markdown('<div class="game-box">', unsafe_allow_html=True)
+    
+    st.markdown(f"### 💬 {st.session_state.feedback}", unsafe_allow_html=True)
 
-    with col1:
-        st.markdown('<div class="game-box">', unsafe_allow_html=True)
-        
-        st.markdown(f"### 💬 {st.session_state.feedback}", unsafe_allow_html=True)
-
-        if st.session_state.game_over:
-            st.success("🎉 Selamat! Kamu menebak dengan benar!")
-            st.balloons()
-            if st.session_state.attempts < st.session_state.high_score:
-                st.session_state.high_score = st.session_state.attempts
-                st.toast("🏆 Rekor Baru!", icon="🥇")
-            if st.button("🔁 Main Lagi"):
-                restart_game()
-                st.rerun()
-        else:
+    if st.session_state.game_over:
+        st.success("🎉 Selamat! Kamu menebak dengan benar!")
+        st.balloons()
+        if st.session_state.attempts < st.session_state.high_score:
+            st.session_state.high_score = st.session_state.attempts
+            st.toast("🏆 Rekor Baru!", icon="🥇")
+        if st.button("🔁 Main Lagi"):
+            restart_game()
+            st.rerun()
+    else:
+        # Menggunakan st.form agar 'Enter' berfungsi
+        with st.form(key="guess_form"):
             guess = st.number_input("Masukkan tebakanmu:", min_value=1, max_value=100, step=1, label_visibility="visible")
-            if st.button("🚀 Tebak Sekarang!"):
-                st.session_state.attempts += 1
-                secret = st.session_state.secret_number
-                diff = abs(guess - secret)
+            submitted = st.form_submit_button("🚀 Tebak Sekarang!")
 
-                if guess < secret:
-                    st.toast("📉 Terlalu rendah!")
-                    if diff < 5: st.session_state.feedback = f"<span style='color:#00ff99'>🔥 Sangat dekat!</span> {guess} hanya sedikit **lebih rendah**!"
-                    elif diff <= 20: st.session_state.feedback = f"⚡ Hampir! {guess} sedikit **di bawah** 🎯"
-                    else: st.session_state.feedback = f"🥶 Masih jauh! {guess} terlalu **rendah**."
-                elif guess > secret:
-                    st.toast("📈 Terlalu tinggi!")
-                    if diff < 5: st.session_state.feedback = f"<span style='color:#ff9933'>🔥 Sangat dekat!</span> {guess} hanya sedikit **lebih tinggi**!"
-                    elif diff <= 20: st.session_state.feedback = f"⚡ Hampir! {guess} sedikit **di atas** 🎯"
-                    else: st.session_state.feedback = f"🥵 Masih jauh! {guess} terlalu **tinggi**."
-                else:
-                    st.toast("🎯 Tepat sekali!")
-                    st.session_state.feedback = f"🎉 Angka {secret} adalah tebakanmu! Kamu butuh {st.session_state.attempts} percobaan."
-                    st.session_state.game_over = True
+        if submitted:
+            st.session_state.attempts += 1
+            secret = st.session_state.secret_number
+            diff = abs(guess - secret)
 
-                # --- PERBAIKAN: Hapus progress bar dan time.sleep ---
-                st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+            if guess < secret:
+                st.toast("📉 Terlalu rendah!")
+                if diff < 5: st.session_state.feedback = f"<span style='color:#00ff99'>🔥 Sangat dekat!</span> {guess} hanya sedikit **lebih rendah**!"
+                elif diff <= 20: st.session_state.feedback = f"⚡ Hampir! {guess} sedikit **di bawah** 🎯"
+                else: st.session_state.feedback = f"🥶 Masih jauh! {guess} terlalu **rendah**."
+            elif guess > secret:
+                st.toast("📈 Terlalu tinggi!")
+                if diff < 5: st.session_state.feedback = f"<span style='color:#ff9933'>🔥 Sangat dekat!</span> {guess} hanya sedikit **lebih tinggi**!"
+                elif diff <= 20: st.session_state.feedback = f"⚡ Hampir! {guess} sedikit **di atas** 🎯"
+                else: st.session_state.feedback = f"🥵 Masih jauh! {guess} terlalu **tinggi**."
+            else:
+                st.toast("🎯 Tepat sekali!")
+                st.session_state.feedback = f"🎉 Angka {secret} adalah tebakanmu! Kamu butuh {st.session_state.attempts} percobaan."
+                st.session_state.game_over = True
+            
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    with col2:
-        st.markdown("## 📊 Papan Skor")
-        st.markdown('<div class="score-panel">', unsafe_allow_html=True)
-        st.metric(label="Percobaan Saat Ini", value=st.session_state.attempts)
-        st.metric(label="Skor Terbaik (Percobaan Tersedikit)", value=st.session_state.high_score)
-        st.markdown('</div>', unsafe_allow_html=True)
 
 # ==============================================================================
 # APLIKASI 2: ANALISIS PORTOFOLIO
