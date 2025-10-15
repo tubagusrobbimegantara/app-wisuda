@@ -154,7 +154,7 @@ def run_eoq_app():
 
 
 # ==============================================================================
-# APLIKASI 3: ANALISIS PORTOFOLIO DENGAN BACKTESTING (DIMODIFIKASI)
+# APLIKASI 3: ANALISIS PORTOFOLIO DENGAN BACKTESTING (KODE DIPERBAIKI)
 # ==============================================================================
 def run_portfolio_app():
     st.title("📈 Analisis & Backtesting Portofolio Saham")
@@ -213,8 +213,6 @@ def run_portfolio_app():
                 returns = in_sample_data.pct_change().dropna()
                 mean_returns, cov_matrix = returns.mean(), returns.cov()
                 
-                # Menggunakan Sharpe Ratio untuk optimisasi
-                # Asumsi Risk-Free Rate 0 untuk simplifikasi pencarian bobot max Sharpe
                 mc_results, mc_weights = run_monte_carlo(mean_returns, cov_matrix, 5000)
                 sharpe_ratios = mc_results[0] / mc_results[1]
                 max_sharpe_idx = np.argmax(sharpe_ratios)
@@ -232,24 +230,21 @@ def run_portfolio_app():
             with st.spinner("Menguji portofolio dan membandingkan dengan IHSG..."):
                 out_sample_start, out_sample_end = '2024-01-01', datetime.now().strftime('%Y-%m-%d')
                 
-                # Ambil data portofolio dan benchmark
                 out_sample_portfolio_data = get_data(df_alokasi['Saham'].tolist(), out_sample_start, out_sample_end)
                 out_sample_benchmark_data = get_data(BENCHMARK_TICKER, out_sample_start, out_sample_end)
 
-                if out_sample_portfolio_data.empty or out_sample_benchmark_data.empty:
-                    st.warning("Tidak cukup data Out-of-Sample untuk melakukan backtesting."); return
-
-                # Kalkulasi Kinerja Portofolio
-                portfolio_returns = out_sample_portfolio_data.pct_change().dropna()
-                weighted_returns = portfolio_returns.dot(df_alokasi.set_index('Saham').loc[portfolio_returns.columns]['Bobot'])
-                portfolio_growth = modal * (1 + weighted_returns).cumprod()
-
-                # Kalkulasi Kinerja Benchmark (IHSG)
-                benchmark_returns = out_sample_benchmark_data.pct_change().dropna()
-                benchmark_growth = modal * (1 + benchmark_returns).cumprod()
-
-                # Fungsi untuk menghitung metrik
+                # ### PERBAIKAN DIMULAI DI SINI ###
+                # Fungsi untuk menghitung metrik dengan penanganan error
                 def calculate_metrics(growth_series, returns_series):
+                    # Tambahkan pengecekan jika series kosong
+                    if growth_series.empty or returns_series.empty:
+                        return {
+                            "Nilai Akhir": "N/A",
+                            "Total Return": "N/A",
+                            "Return Tahunan": "N/A",
+                            "Risiko Tahunan": "N/A"
+                        }
+                    
                     total_return = (growth_series.iloc[-1] / growth_series.iloc[0]) - 1
                     trading_days = len(returns_series)
                     annualized_return = (1 + total_return)**(252/trading_days) - 1 if trading_days > 0 else 0
@@ -260,16 +255,35 @@ def run_portfolio_app():
                         "Return Tahunan": f"{annualized_return:.2%}",
                         "Risiko Tahunan": f"{annualized_volatility:.2%}"
                     }
+                
+                # Inisialisasi DataFrame kosong untuk metrik
+                portfolio_metrics = {}
+                benchmark_metrics = {}
+                
+                # Kalkulasi Kinerja Portofolio jika data ada
+                if not out_sample_portfolio_data.empty:
+                    portfolio_returns = out_sample_portfolio_data.pct_change().dropna()
+                    if not portfolio_returns.empty:
+                        weighted_returns = portfolio_returns.dot(df_alokasi.set_index('Saham').loc[portfolio_returns.columns]['Bobot'])
+                        portfolio_growth = modal * (1 + weighted_returns).cumprod()
+                        portfolio_metrics = calculate_metrics(portfolio_growth, weighted_returns)
 
-                portfolio_metrics = calculate_metrics(portfolio_growth, weighted_returns)
-                benchmark_metrics = calculate_metrics(benchmark_growth, benchmark_returns)
+                # Kalkulasi Kinerja Benchmark (IHSG) jika data ada
+                if not out_sample_benchmark_data.empty:
+                    benchmark_returns = out_sample_benchmark_data.pct_change().dropna()
+                    if not benchmark_returns.empty:
+                        benchmark_growth = modal * (1 + benchmark_returns).cumprod()
+                        benchmark_metrics = calculate_metrics(benchmark_growth, benchmark_returns)
 
-                # Tampilkan Tabel Perbandingan
+                # Jika salah satu atau keduanya kosong, tampilkan peringatan
+                if not portfolio_metrics or not benchmark_metrics:
+                    st.warning("Tidak cukup data Out-of-Sample (2024-sekarang) untuk menampilkan perbandingan.")
+                    return
+
                 st.subheader("📊 Perbandingan Kinerja")
                 df_comparison = pd.DataFrame([portfolio_metrics, benchmark_metrics], index=["Portofolio Anda", "IHSG"]).T
                 st.table(df_comparison)
 
-                # Visualisasi Pertumbuhan
                 st.subheader("📈 Grafik Pertumbuhan Investasi")
                 fig_growth = go.Figure()
                 fig_growth.add_trace(go.Scatter(x=portfolio_growth.index, y=portfolio_growth, mode='lines', name='Portofolio Anda'))
@@ -289,9 +303,9 @@ app_choice = st.sidebar.radio(
 st.sidebar.markdown("---")
 st.sidebar.info("Dashboard ini dibuat untuk analisis interaktif.")
 
-if app_choice == "📈 Analisis Portofolio":
+if app_choice == "🔮 Game Tebak Angka":
+    run_game_app()
+elif app_choice == "📈 Analisis Portofolio":
     run_portfolio_app()
 elif app_choice == "📦 Kalkulator Persediaan (EOQ)":
     run_eoq_app()
-elif app_choice == "🔮 Game Tebak Angka":
-    run_game_app()
