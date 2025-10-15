@@ -3,7 +3,7 @@ import random
 import math
 from io import BytesIO
 
-# Pustaka untuk Portofolio, EOQ, Fraktal, & Harvesting
+# Pustaka untuk Portofolio, Fraktal, & Harvesting
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -16,15 +16,6 @@ st.set_page_config(
     page_icon="🚀",
     layout="wide"
 )
-
-# --- Helper Function untuk Download Excel ---
-@st.cache_data
-def to_excel(df):
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Penjualan')
-    processed_data = output.getvalue()
-    return processed_data
 
 # ==============================================================================
 # APLIKASI 1: ANALISIS PORTOFOLIO (Tidak Ada Perubahan)
@@ -95,7 +86,6 @@ def run_portfolio_app():
                     portfolio_metrics = calculate_metrics(portfolio_growth, weighted_returns)
                 if not out_sample_benchmark_data.empty:
                     benchmark_returns = out_sample_benchmark_data.pct_change().dropna()
-                    # Handle jika benchmark hanya punya 1 kolom (Series) atau lebih (DataFrame)
                     if isinstance(benchmark_returns, pd.Series):
                         benchmark_growth = modal * (1 + benchmark_returns).cumprod()
                     else:
@@ -111,7 +101,82 @@ def run_portfolio_app():
                 st.plotly_chart(fig, use_container_width=True)
 
 # ==============================================================================
-# APLIKASI 3: GAME TEBAK ANGKA (Tidak Ada Perubahan)
+# APLIKASI 2: PANEN BERKELANJUTAN
+# ==============================================================================
+def run_harvesting_app():
+    st.title("🐄 Simulasi Panen Ternak Berkelanjutan")
+    st.markdown("Aplikasi ini mensimulasikan dampak panen tahunan terhadap populasi ternak. Gunakan model ini untuk menentukan apakah tingkat panen Anda berkelanjutan atau akan menyebabkan kepunahan.")
+    st.write("---")
+    col1, col2 = st.columns([2, 1])
+    with col2:
+        st.subheader("⚙️ Atur Parameter")
+        p0 = st.slider("Populasi Awal (Ekor)", 10, 1000, 50, 10)
+        K = st.slider("Daya Tampung Lahan (K)", 100, 2000, 1000, 50, help="Jumlah maksimum ternak yang dapat didukung oleh lahan.")
+        r = st.slider("Laju Pertumbuhan (r)", 0.05, 1.0, 0.2, 0.05, format="%.2f", help="Laju pertumbuhan alami populasi per tahun.")
+        H = st.slider("Jumlah Panen per Tahun (H)", 0, 200, 40, 5, help="Jumlah ternak yang diambil/dipanen setiap tahun.")
+    years = 50
+    population = [p0]
+    for _ in range(1, years):
+        last_pop = population[-1]
+        growth = r * last_pop * (1 - last_pop / K)
+        next_pop = last_pop + growth - H
+        population.append(max(0, next_pop))
+    df_pop = pd.DataFrame({'Tahun': range(years), 'Populasi': population})
+    msy = (r * K) / 4
+    with col1:
+        st.header("📈 Hasil Simulasi Populasi")
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df_pop['Tahun'], y=df_pop['Populasi'], mode='lines+markers', name='Populasi Ternak'))
+        fig.update_layout(xaxis_title="Tahun", yaxis_title="Jumlah Ekor")
+        st.plotly_chart(fig, use_container_width=True)
+        final_population = population[-1]
+        st.header("🎯 Status & Rekomendasi")
+        if final_population <= 1:
+            st.error(f"**Status: Tidak Berkelanjutan.** Dengan tingkat panen {H} ekor per tahun, populasi ternak akan habis.")
+        elif H > msy:
+            st.warning(f"**Status: Berisiko.** Tingkat panen Anda ({H} ekor/tahun) melebihi batas lestari maksimum. Populasi akan menurun dalam jangka panjang dan rentan punah.")
+            st.info(f"💡 **Rekomendasi panen optimal** (MSY) untuk parameter ini adalah **{msy:,.0f} ekor/tahun**. Ini adalah jumlah panen terbanyak yang bisa dilakukan setiap tahun agar populasi tetap lestari dalam jangka panjang.")
+        else:
+            st.success(f"**Status: Berkelanjutan.** Tingkat panen Anda ({H} ekor/tahun) berada pada level yang aman dan populasi dapat bertahan atau bertumbuh.")
+
+# ==============================================================================
+# APLIKASI 3: GEOMETRI FRAKTAL
+# ==============================================================================
+def run_fractal_app():
+    st.title("🎨 Visualisasi Fraktal Bernuansa Batik")
+    st.markdown("Jelajahi keindahan matematika fraktal dengan visualisasi yang terinspirasi dari corak dan warna batik. Pilih jenis fraktal untuk melihat pola unik yang dihasilkan.")
+    c1, c2 = st.columns(2)
+    with c1:
+        fractal_type = st.selectbox("Pilih Jenis Fraktal", ("Kapal Terbakar (Seperti Batik)", "Mandelbrot Klasik"))
+    with c2:
+        iterations = st.slider("Jumlah Iterasi (Detail)", 20, 300, 75, 10, help="Semakin tinggi, semakin detail polanya.")
+    @st.cache_data
+    def generate_fractal(width, height, max_iter, type):
+        x, y = np.linspace(-2, 2, width), np.linspace(-2, 2, height)
+        c = x[:, np.newaxis] + 1j * y[np.newaxis, :]; z = np.zeros_like(c, dtype=complex)
+        output = np.zeros(c.shape)
+        for it in range(max_iter):
+            not_diverged = np.abs(z) < 10
+            output[not_diverged] = it
+            if type == "Mandelbrot Klasik":
+                z[not_diverged] = z[not_diverged]**2 + c[not_diverged]
+            elif type == "Kapal Terbakar (Seperti Batik)":
+                z_abs = np.abs(z[not_diverged].real) + 1j * np.abs(z[not_diverged].imag)
+                z[not_diverged] = z_abs**2 + c[not_diverged]
+        return output
+    with st.spinner(f"Menciptakan '{fractal_type}' dengan {iterations} iterasi..."):
+        fractal_data = generate_fractal(800, 800, iterations, fractal_type)
+        batik_colors = [
+            [0.0, 'rgb(75, 56, 42)'], [0.2, 'rgb(139, 90, 43)'],
+            [0.5, 'rgb(234, 224, 213)'], [0.8, 'rgb(46, 64, 87)'],
+            [1.0, 'rgb(15, 23, 42)']
+        ]
+        fig = go.Figure(data=go.Heatmap(z=fractal_data, colorscale=batik_colors, showscale=False))
+        fig.update_layout(title=f"Fraktal: {fractal_type}", xaxis_visible=False, yaxis_visible=False, height=600)
+        st.plotly_chart(fig, use_container_width=True)
+
+# ==============================================================================
+# APLIKASI 4: GAME TEBAK ANGKA
 # ==============================================================================
 def run_game_app():
     st.title("🔮 Game: Tebak Angka Misterius!")
@@ -135,7 +200,6 @@ def run_game_app():
         else:
             st.success(f"Benar! Angkanya {secret}. Ditebak dalam {st.session_state.game_attempts} percobaan.")
             st.balloons()
-            # Reset game
             st.session_state.game_secret_number = random.randint(1, 100)
             st.session_state.game_attempts = 0
             st.session_state.game_history = []
@@ -143,103 +207,27 @@ def run_game_app():
         st.write("Riwayat Tebakan:", ", ".join(st.session_state.game_history))
 
 # ==============================================================================
-# APLIKASI 4: GEOMETRI FRAKTAL (Tidak Ada Perubahan)
-# ==============================================================================
-def run_fractal_app():
-    st.title("🌌 Visualisasi Geometri Fraktal: Mandelbrot Set")
-    st.markdown("Fraktal adalah pola geometris kompleks yang berulang pada setiap skala. Mandelbrot set adalah contoh paling terkenal, diciptakan dari persamaan sederhana $Z_{n+1} = Z_n^2 + C$.")
-    st.subheader("⚙️ Atur Parameter Visualisasi")
-    iterations = st.slider("Jumlah Iterasi (Detail)", 10, 200, 50, 10, help="Semakin tinggi, semakin detail gambar fraktal, namun waktu proses lebih lama.")
-    @st.cache_data
-    def generate_mandelbrot(width, height, max_iter):
-        x, y = np.linspace(-2, 1, width), np.linspace(-1.5, 1.5, height)
-        c = x[:, np.newaxis] + 1j * y[np.newaxis, :]; z = np.zeros_like(c, dtype=complex)
-        output = np.zeros(c.shape)
-        for it in range(max_iter):
-            not_diverged = np.abs(z) < 2; output[not_diverged] = it
-            z[not_diverged] = z[not_diverged]**2 + c[not_diverged]
-        return output
-    with st.spinner(f"Menghasilkan fraktal dengan {iterations} iterasi..."):
-        mandelbrot_data = generate_mandelbrot(800, 800, iterations)
-        fig = go.Figure(data=go.Heatmap(z=mandelbrot_data, colorscale='viridis', showscale=False))
-        fig.update_layout(title="Mandelbrot Set", xaxis_visible=False, yaxis_visible=False, height=600)
-        st.plotly_chart(fig, use_container_width=True)
-
-# ==============================================================================
-# APLIKASI 5: PANEN BERKELANJUTAN (KODE DIPERBAIKI)
-# ==============================================================================
-def run_harvesting_app():
-    st.title("🐄 Simulasi Panen Ternak Berkelanjutan")
-    st.markdown("Aplikasi ini mensimulasikan dampak panen tahunan terhadap populasi ternak. Gunakan model ini untuk menentukan apakah tingkat panen Anda berkelanjutan atau akan menyebabkan kepunahan.")
-    st.write("---")
-
-    col1, col2 = st.columns([2, 1])
-
-    with col2:
-        st.subheader("⚙️ Atur Parameter")
-        p0 = st.slider("Populasi Awal (Ekor)", min_value=10, max_value=1000, value=50, step=10)
-        K = st.slider("Daya Tampung Lahan (K)", min_value=100, max_value=2000, value=1000, step=50, help="Jumlah maksimum ternak yang dapat didukung oleh lahan.")
-        r = st.slider("Laju Pertumbuhan (r)", min_value=0.05, max_value=1.0, value=0.2, step=0.05, format="%.2f", help="Laju pertumbuhan alami populasi per tahun.")
-        H = st.slider("Jumlah Panen per Tahun (H)", min_value=0, max_value=200, value=40, step=5, help="Jumlah ternak yang diambil/dipanen setiap tahun.")
-    
-    # --- SIMULASI ---
-    years = 50
-    population = [p0]
-    for _ in range(1, years):
-        # Perhitungan populasi tahun berikutnya
-        last_pop = population[-1]
-        growth = r * last_pop * (1 - last_pop / K)
-        next_pop = last_pop + growth - H
-        population.append(max(0, next_pop)) # Pastikan populasi tidak negatif
-    
-    df_pop = pd.DataFrame({'Tahun': range(years), 'Populasi': population})
-    
-    # --- HITUNG REKOMENDASI SETELAH SLIDER DIBACA ---
-    msy = (r * K) / 4
-
-    with col1:
-        st.header("📈 Hasil Simulasi Populasi")
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=df_pop['Tahun'], y=df_pop['Populasi'], mode='lines+markers', name='Populasi Ternak'))
-        fig.update_layout(xaxis_title="Tahun", yaxis_title="Jumlah Ekor")
-        st.plotly_chart(fig, use_container_width=True)
-
-        final_population = population[-1]
-
-        st.header("🎯 Status & Rekomendasi")
-        
-        # Analisis Status
-        if final_population <= 1: # Dianggap punah jika sisa 1 atau kurang
-            st.error(f"**Status: Tidak Berkelanjutan.** Dengan tingkat panen {H} ekor per tahun, populasi ternak akan habis.")
-        elif H > msy:
-            st.warning(f"**Status: Berisiko.** Tingkat panen Anda ({H} ekor/tahun) melebihi batas lestari maksimum. Populasi akan menurun dalam jangka panjang dan rentan punah.")
-        else:
-            st.success(f"**Status: Berkelanjutan.** Tingkat panen Anda ({H} ekor/tahun) berada pada level yang aman dan populasi dapat bertahan atau bertumbuh.")
-
-        # Rekomendasi Optimal
-        st.info(f"💡 **Rekomendasi panen optimal** (MSY) untuk parameter ini adalah **{msy:,.0f} ekor/tahun**. Ini adalah jumlah panen terbanyak yang bisa dilakukan setiap tahun agar populasi tetap lestari dalam jangka panjang.")
-
-
-# ==============================================================================
 # NAVIGASI UTAMA APLIKASI
 # ==============================================================================
 st.sidebar.title("Menu Utama")
+# Hapus EOQ dari menu
 app_choice = st.sidebar.radio(
     "Pilih Aplikasi:",
-    ( "🔮 Game Tebak Angka",
-     "📈 Analisis Portofolio", 
+    ("📈 Analisis Portofolio", 
      "🐄 Panen Berkelanjutan",
-     "🌌 Geometri Fraktal")
+     "🎨 Geometri Fraktal (Batik)",
+     "🔮 Game Tebak Angka")
 )
 st.sidebar.markdown("---")
 st.sidebar.image("https://www.ukri.ac.id/storage/upload/file/conten/file_1689928528lambang_foto_conten_.png", width=100)
 st.sidebar.info("Dashboard Analisis Interaktif.")
 
+# Hapus EOQ dari logika pemanggilan fungsi
 if app_choice == "📈 Analisis Portofolio":
     run_portfolio_app()
 elif app_choice == "🐄 Panen Berkelanjutan":
     run_harvesting_app()
-elif app_choice == "🌌 Geometri Fraktal":
+elif app_choice == "🎨 Geometri Fraktal (Batik)":
     run_fractal_app()
 elif app_choice == "🔮 Game Tebak Angka":
     run_game_app()
