@@ -30,8 +30,8 @@ def run_game_app():
                 background: linear-gradient(145deg, #2b2b2b, #1e1e1e);
                 padding: 2rem; border-radius: 20px;
                 box-shadow: 10px 10px 20px #1c1c1c, -10px -10px 20px #2e2e2e;
-                color: #e0e0e0;
-                min-height: 250px; /* Memberi tinggi minimum agar layout stabil */
+                color: #e0e0e_0;
+                min-height: 250px;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
@@ -54,7 +54,6 @@ def run_game_app():
                 background-color: #252525; text-align: center; padding: 1rem;
                 border-radius: 15px; border: 1px solid #444;
             }
-            /* Style baru untuk menghilangkan kotak buram */
             .game-message {
                 text-align: center;
                 font-size: 1.2rem;
@@ -62,14 +61,7 @@ def run_game_app():
                 padding: 1rem;
                 border-radius: 10px;
                 margin-bottom: 1rem;
-            }
-            .info-message {
-                color: #a1d9ef; /* Warna biru muda untuk info */
-                background-color: #2c3e50;
-            }
-            .success-message {
-                color: #a8e6cf; /* Warna hijau muda untuk sukses */
-                background-color: #2c3e50;
+                color: #e0e0e0;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -93,29 +85,34 @@ def run_game_app():
     with col1:
         st.markdown('<div class="game-container">', unsafe_allow_html=True)
         
-        # Gunakan st.empty untuk menampung pesan agar bisa diganti-ganti
         message_placeholder = st.empty()
 
         if st.session_state.game_over:
-            # Tampilkan pesan sukses dengan style baru
-            message_placeholder.markdown(f'<p class="game-message success-message">{st.session_state.message}</p>', unsafe_allow_html=True)
+            message_placeholder.markdown(f'<p class="game-message">{st.session_state.message}</p>', unsafe_allow_html=True)
             st.balloons()
             if st.button("Main Lagi? 🔄"):
                 restart_game()
                 st.rerun()
         else:
-            # Tampilkan pesan info dengan style baru
-            message_placeholder.markdown(f'<p class="game-message info-message"><strong>Petunjuk:</strong> {st.session_state.message}</p>', unsafe_allow_html=True)
+            message_placeholder.markdown(f'<p class="game-message">{st.session_state.message}</p>', unsafe_allow_html=True)
             with st.form(key="guess_form"):
                 guess = st.number_input("Masukkan tebakanmu di sini:", min_value=1, max_value=100, step=1, label_visibility="collapsed")
                 submit = st.form_submit_button(label="🔑 Tebak!")
             if submit:
                 st.session_state.attempts += 1
                 secret = st.session_state.secret_number
+                difference = abs(guess - secret)
+
                 if guess < secret:
-                    st.session_state.message = f"Angka {guess} **terlalu RENDAH**! 📉 Coba angka yang lebih besar."
+                    if difference > 15:
+                        st.session_state.message = f"Masih terlalu jauh! Angka {guess} **sangat RENDAH** 🥶"
+                    else:
+                        st.session_state.message = f"Anda semakin dekat! Tapi {guess} masih terlalu **rendah** 🤔"
                 elif guess > secret:
-                    st.session_state.message = f"Angka {guess} **terlalu TINGGI**! 📈 Coba angka yang lebih kecil."
+                    if difference > 15:
+                        st.session_state.message = f"Masih terlalu jauh! Angka {guess} **sangat TINGGI** 🔥"
+                    else:
+                        st.session_state.message = f"Anda semakin dekat! Tapi {guess} masih terlalu **tinggi** 🤔"
                 else:
                     st.session_state.game_over = True
                     st.session_state.message = f"🎉 Selamat! Kamu berhasil menebak angka **{secret}**!"
@@ -135,7 +132,7 @@ def run_game_app():
             st.markdown('</div>', unsafe_allow_html=True)
 
 # ==============================================================================
-# APLIKASI 1: ANALISIS PORTOFOLIO
+# APLIKASI 2: ANALISIS PORTOFOLIO
 # ==============================================================================
 def run_portfolio_app():
     st.title("📈 Analisis & Backtesting Portofolio Saham")
@@ -217,7 +214,7 @@ def run_portfolio_app():
                 st.plotly_chart(fig, use_container_width=True)
 
 # ==============================================================================
-# APLIKASI 2: PANEN BERKELANJUTAN
+# APLIKASI 3: PANEN BERKELANJUTAN
 # ==============================================================================
 def run_harvesting_app():
     st.title("🐄 Simulasi Panen Ternak Berkelanjutan")
@@ -249,15 +246,14 @@ def run_harvesting_app():
         st.header("🎯 Status & Rekomendasi")
         if final_population <= 1:
             st.error(f"**Status: Tidak Berkelanjutan.** Dengan tingkat panen {H} ekor per tahun, populasi ternak akan habis.")
-            st.info(f"💡 **Rekomendasi panen optimal** (MSY) untuk parameter ini adalah **{msy:,.0f} ekor/tahun**. Ini adalah jumlah panen terbanyak yang bisa dilakukan setiap tahun agar populasi tetap lestari dalam jangka panjang.")
         elif H > msy:
             st.warning(f"**Status: Berisiko.** Tingkat panen Anda ({H} ekor/tahun) melebihi batas lestari maksimum. Populasi akan menurun dalam jangka panjang dan rentan punah.")
-            st.info(f"💡 **Rekomendasi panen optimal** (MSY) untuk parameter ini adalah **{msy:,.0f} ekor/tahun**. Ini adalah jumlah panen terbanyak yang bisa dilakukan setiap tahun agar populasi tetap lestari dalam jangka panjang.")
         else:
             st.success(f"**Status: Berkelanjutan.** Tingkat panen Anda ({H} ekor/tahun) berada pada level yang aman dan populasi dapat bertahan atau bertumbuh.")
-        
+        st.info(f"💡 **Rekomendasi panen optimal** (MSY) untuk parameter ini adalah **{msy:,.0f} ekor/tahun**. Ini adalah jumlah panen terbanyak yang bisa dilakukan setiap tahun agar populasi tetap lestari dalam jangka panjang.")
+
 # ==============================================================================
-# APLIKASI 3: GEOMETRI FRAKTAL
+# APLIKASI 4: GEOMETRI FRAKTAL
 # ==============================================================================
 def run_fractal_app():
     st.title("🎨 Visualisasi Fraktal Eye-Catching")
@@ -303,7 +299,6 @@ def run_fractal_app():
         fig = go.Figure(data=go.Heatmap(z=fractal_data, colorscale=selected_colorscale, showscale=False))
         fig.update_layout(title=f"Fraktal: {fractal_type}", xaxis_visible=False, yaxis_visible=False, height=600, template='plotly_dark')
         st.plotly_chart(fig, use_container_width=True)
-
 
 # ==============================================================================
 # NAVIGASI UTAMA APLIKASI
