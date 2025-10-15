@@ -36,21 +36,7 @@ def run_game_app():
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .game-box {
-            background: rgba(255,255,255,0.08);
-            border-radius: 20px;
-            padding: 2rem;
-            box-shadow: 0 0 25px rgba(0,255,255,0.1);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease-in-out;
-            min-height: 350px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-around;
-        }
-        .game-box:hover {
-            box-shadow: 0 0 40px rgba(0,255,255,0.2);
-        }
+
         .stButton>button {
             background: linear-gradient(135deg, #00d4ff, #007bff);
             border: none;
