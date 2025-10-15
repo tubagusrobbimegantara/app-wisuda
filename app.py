@@ -12,16 +12,144 @@ from datetime import datetime
 
 # --- Konfigurasi Halaman Utama ---
 st.set_page_config(
-    page_title="Dashboard Interaktif",
-    page_icon="🚀",
+    page_title="Arena Game & Analisis",
+    page_icon="🎮",
     layout="wide"
 )
 
 # ==============================================================================
-# APLIKASI 1: ANALISIS PORTOFOLIO (Tidak Ada Perubahan)
+# APLIKASI UTAMA: GAME TEBAK ANGKA (UI/UX DIDESAIN ULANG TOTAL)
+# ==============================================================================
+def run_game_app():
+    # --- CSS Kustom untuk Tampilan Game Modern ---
+    st.markdown("""
+        <style>
+            .main > div {
+                padding-top: 2rem;
+            }
+            .st-emotion-cache-1y4p8pa {
+                padding-top: 2rem;
+            }
+            .block-container {
+                padding-top: 2rem;
+            }
+            .game-container {
+                background: linear-gradient(145deg, #2b2b2b, #1e1e1e);
+                padding: 2rem;
+                border-radius: 20px;
+                box-shadow: 10px 10px 20px #1c1c1c, -10px -10px 20px #2e2e2e;
+                color: #e0e0e0;
+            }
+            .st-emotion-cache-10trblm {
+                color: #e0e0e0;
+                font-family: 'Consolas', 'Courier New', monospace;
+            }
+            .stNumberInput input {
+                background-color: #333;
+                color: #fff;
+                border: 2px solid #555;
+                border-radius: 10px;
+                text-align: center;
+                font-size: 2rem;
+                font-weight: bold;
+            }
+            .stButton>button {
+                background: linear-gradient(145deg, #00d4ff, #009de0);
+                color: white;
+                font-weight: bold;
+                border: none;
+                border-radius: 12px;
+                padding: 12px 24px;
+                width: 100%;
+                box-shadow: 5px 5px 10px #1c1c1c, -5px -5px 10px #2e2e2e;
+                transition: all 0.2s ease-in-out;
+            }
+            .stButton>button:hover {
+                transform: scale(1.05);
+                box-shadow: 7px 7px 15px #1c1c1c, -7px -7px 15px #2e2e2e;
+            }
+            .score-box {
+                background-color: #252525;
+                text-align: center;
+                padding: 1rem;
+                border-radius: 15px;
+                border: 1px solid #444;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # --- Inisialisasi State Game ---
+    if 'secret_number' not in st.session_state:
+        st.session_state.secret_number = random.randint(1, 100)
+        st.session_state.attempts = 0
+        st.session_state.high_score = st.session_state.get('high_score', 999) # Skor tertinggi (lebih rendah lebih baik)
+        st.session_state.game_over = False
+        st.session_state.message = "Mulai permainan dengan menebak angka!"
+
+    def restart_game():
+        st.session_state.secret_number = random.randint(1, 100)
+        st.session_state.attempts = 0
+        st.session_state.game_over = False
+        st.session_state.message = "Game baru dimulai! Angka rahasia telah direset."
+
+    # --- Tampilan Game ---
+    st.title("🎮 Arena Tebak Angka 🔮")
+    st.markdown("Uji intuisimu! Aku telah memilih angka rahasia antara **1 dan 100**. Bisakah kamu menebaknya dengan percobaan sesedikit mungkin?")
+    st.write("---")
+
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        with st.container():
+            st.markdown('<div class="game-container">', unsafe_allow_html=True)
+            
+            if st.session_state.game_over:
+                st.success(st.session_state.message)
+                st.balloons()
+                if st.button("Main Lagi? 🔄"):
+                    restart_game()
+                    st.rerun()
+            else:
+                st.info(f"**Petunjuk:** {st.session_state.message}")
+                with st.form(key="guess_form"):
+                    guess = st.number_input("Masukkan tebakanmu di sini:", min_value=1, max_value=100, step=1, label_visibility="collapsed")
+                    submit = st.form_submit_button(label="🔑 Tebak!")
+
+                if submit:
+                    st.session_state.attempts += 1
+                    secret = st.session_state.secret_number
+                    if guess < secret:
+                        st.session_state.message = f"Angka {guess} **terlalu RENDAH**! 📉 Coba angka yang lebih besar."
+                    elif guess > secret:
+                        st.session_state.message = f"Angka {guess} **terlalu TINGGI**! 📈 Coba angka yang lebih kecil."
+                    else:
+                        st.session_state.game_over = True
+                        st.session_state.message = f"🎉 Selamat! Kamu berhasil menebak angka **{secret}**!"
+                        # Update high score
+                        if st.session_state.attempts < st.session_state.high_score:
+                            st.session_state.high_score = st.session_state.attempts
+                            st.session_state.message += " Kamu mencetak **REKOR BARU**!"
+                    st.rerun()
+
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    with col2:
+        st.subheader("📊 Papan Skor")
+        with st.container(border=True):
+            st.markdown('<div class="score-box">', unsafe_allow_html=True)
+            st.metric(label="Percobaan Saat Ini", value=f"{st.session_state.attempts} 🎯")
+            st.markdown('</div><br>', unsafe_allow_html=True)
+            st.markdown('<div class="score-box">', unsafe_allow_html=True)
+            st.metric(label="Skor Terbaik (Percobaan Terendah)", value=f"{st.session_state.high_score} 🏆")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+
+# ==============================================================================
+# APLIKASI 2: ANALISIS PORTOFOLIO
 # ==============================================================================
 def run_portfolio_app():
     st.title("📈 Analisis & Backtesting Portofolio Saham")
+    # ... (Kode Portofolio tetap sama seperti sebelumnya) ...
     st.markdown("Aplikasi ini mengoptimalkan alokasi portofolio pada data **In-Sample (2015-2023)** dan menguji kinerjanya pada data **Out-of-Sample (2024-sekarang)** dengan membandingkannya terhadap **IHSG**.")
     st.write("---")
     LQ45_TICKERS = sorted(["ACES.JK", "ADRO.JK", "AKRA.JK", "AMMN.JK", "AMRT.JK", "ARTO.JK", "ASII.JK", "BBCA.JK", "BBNI.JK", "BBRI.JK", "BMRI.JK", "BRIS.JK", "BRPT.JK", "BUKA.JK", "CPIN.JK", "EMTK.JK", "ESSA.JK", "EXCL.JK", "GGRM.JK", "GOTO.JK", "HRUM.JK", "ICBP.JK", "INCO.JK", "INDF.JK", "INDY.JK", "INKP.JK", "INTP.JK", "ITMG.JK", "JSMR.JK", "KLBF.JK", "MAPI.JK", "MBMA.JK", "MDKA.JK", "MEDC.JK", "PGAS.JK", "PGEO.JK", "PTBA.JK", "SMGR.JK", "SRTG.JK", "TLKM.JK", "TPIA.JK", "UNTR.JK", "UNVR.JK"])
@@ -101,9 +229,10 @@ def run_portfolio_app():
                 st.plotly_chart(fig, use_container_width=True)
 
 # ==============================================================================
-# APLIKASI 2: PANEN BERKELANJUTAN
+# APLIKASI 3: PANEN BERKELANJUTAN
 # ==============================================================================
 def run_harvesting_app():
+    # ... (Kode Panen Berkelanjutan tetap sama seperti sebelumnya) ...
     st.title("🐄 Simulasi Panen Ternak Berkelanjutan")
     st.markdown("Aplikasi ini mensimulasikan dampak panen tahunan terhadap populasi ternak. Gunakan model ini untuk menentukan apakah tingkat panen Anda berkelanjutan atau akan menyebabkan kepunahan.")
     st.write("---")
@@ -135,99 +264,86 @@ def run_harvesting_app():
             st.error(f"**Status: Tidak Berkelanjutan.** Dengan tingkat panen {H} ekor per tahun, populasi ternak akan habis.")
         elif H > msy:
             st.warning(f"**Status: Berisiko.** Tingkat panen Anda ({H} ekor/tahun) melebihi batas lestari maksimum. Populasi akan menurun dalam jangka panjang dan rentan punah.")
-            st.info(f"💡 **Rekomendasi panen optimal** (MSY) untuk parameter ini adalah **{msy:,.0f} ekor/tahun**. Ini adalah jumlah panen terbanyak yang bisa dilakukan setiap tahun agar populasi tetap lestari dalam jangka panjang.")
         else:
             st.success(f"**Status: Berkelanjutan.** Tingkat panen Anda ({H} ekor/tahun) berada pada level yang aman dan populasi dapat bertahan atau bertumbuh.")
+        st.info(f"💡 **Rekomendasi panen optimal** (MSY) untuk parameter ini adalah **{msy:,.0f} ekor/tahun**. Ini adalah jumlah panen terbanyak yang bisa dilakukan setiap tahun agar populasi tetap lestari dalam jangka panjang.")
 
 # ==============================================================================
-# APLIKASI 3: GEOMETRI FRAKTAL
+# APLIKASI 4: GEOMETRI FRAKTAL
 # ==============================================================================
 def run_fractal_app():
+    # ... (Kode Geometri Fraktal tetap sama seperti sebelumnya) ...
     st.title("🎨 Visualisasi Fraktal Bernuansa Batik")
     st.markdown("Jelajahi keindahan matematika fraktal dengan visualisasi yang terinspirasi dari corak dan warna batik. Pilih jenis fraktal untuk melihat pola unik yang dihasilkan.")
-    c1, c2 = st.columns(2)
-    with c1:
-        fractal_type = st.selectbox("Pilih Jenis Fraktal", ("Kapal Terbakar (Seperti Batik)", "Mandelbrot Klasik"))
-    with c2:
-        iterations = st.slider("Jumlah Iterasi (Detail)", 20, 300, 75, 10, help="Semakin tinggi, semakin detail polanya.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        fractal_type = st.selectbox(
+            "Pilih Jenis Fraktal", 
+            ("Segitiga Sierpinski", "Kapal Terbakar (Seperti Batik)", "Mandelbrot Klasik")
+        )
+    with col2:
+        if fractal_type == "Segitiga Sierpinski":
+            iterations = st.slider("Jumlah Iterasi (Detail)", 1, 8, 5, 1, help="Semakin tinggi, semakin detail segitiga.")
+        else:
+            iterations = st.slider("Jumlah Iterasi (Detail)", 20, 300, 75, 10, help="Semakin tinggi, semakin detail polanya.")
+
     @st.cache_data
     def generate_fractal(width, height, max_iter, type):
-        x, y = np.linspace(-2, 2, width), np.linspace(-2, 2, height)
-        c = x[:, np.newaxis] + 1j * y[np.newaxis, :]; z = np.zeros_like(c, dtype=complex)
-        output = np.zeros(c.shape)
-        for it in range(max_iter):
-            not_diverged = np.abs(z) < 10
-            output[not_diverged] = it
-            if type == "Mandelbrot Klasik":
-                z[not_diverged] = z[not_diverged]**2 + c[not_diverged]
-            elif type == "Kapal Terbakar (Seperti Batik)":
-                z_abs = np.abs(z[not_diverged].real) + 1j * np.abs(z[not_diverged].imag)
-                z[not_diverged] = z_abs**2 + c[not_diverged]
-        return output
+        if type == "Segitiga Sierpinski":
+            points = np.array([[width/2, 0], [0, height], [width, height]])
+            p = np.array([random.uniform(0, width), random.uniform(0, height)])
+            image_data = np.zeros((height, width))
+            for _ in range(max_iter * 5000):
+                target_vertex = random.choice(points)
+                p = (p + target_vertex) / 2
+                x_coord, y_coord = int(p[0]), int(p[1])
+                if 0 <= x_coord < width and 0 <= y_coord < height:
+                    image_data[y_coord, x_coord] = 1
+            return image_data
+        else:
+            x, y = np.linspace(-2, 2, width), np.linspace(-2, 2, height)
+            c = x[:, np.newaxis] + 1j * y[np.newaxis, :]; z = np.zeros_like(c, dtype=complex)
+            output = np.zeros(c.shape)
+            for it in range(max_iter):
+                not_diverged = np.abs(z) < 10
+                output[not_diverged] = it
+                if type == "Mandelbrot Klasik":
+                    z[not_diverged] = z[not_diverged]**2 + c[not_diverged]
+                elif type == "Kapal Terbakar (Seperti Batik)":
+                    z_abs = np.abs(z[not_diverged].real) + 1j * np.abs(z[not_diverged].imag)
+                    z[not_diverged] = z_abs**2 + c[not_diverged]
+            return output
     with st.spinner(f"Menciptakan '{fractal_type}' dengan {iterations} iterasi..."):
-        fractal_data = generate_fractal(800, 800, iterations, fractal_type)
-        batik_colors = [
-            [0.0, 'rgb(75, 56, 42)'], [0.2, 'rgb(139, 90, 43)'],
-            [0.5, 'rgb(234, 224, 213)'], [0.8, 'rgb(46, 64, 87)'],
-            [1.0, 'rgb(15, 23, 42)']
-        ]
+        img_width, img_height = 800, 800 
+        fractal_data = generate_fractal(img_width, img_height, iterations, fractal_type)
+        batik_colors = [[0.0, 'rgb(75, 56, 42)'],[0.2, 'rgb(139, 90, 43)'],[0.5, 'rgb(234, 224, 213)'],[0.8, 'rgb(46, 64, 87)'],[1.0, 'rgb(15, 23, 42)']]
         fig = go.Figure(data=go.Heatmap(z=fractal_data, colorscale=batik_colors, showscale=False))
         fig.update_layout(title=f"Fraktal: {fractal_type}", xaxis_visible=False, yaxis_visible=False, height=600)
         st.plotly_chart(fig, use_container_width=True)
 
-# ==============================================================================
-# APLIKASI 4: GAME TEBAK ANGKA
-# ==============================================================================
-def run_game_app():
-    st.title("🔮 Game: Tebak Angka Misterius!")
-    if 'game_secret_number' not in st.session_state:
-        st.session_state.game_secret_number = random.randint(1, 100)
-        st.session_state.game_attempts = 0
-        st.session_state.game_history = []
-    st.markdown("Saya telah memilih angka rahasia antara 1 dan 100. Coba tebak!")
-    with st.form(key="game_form", clear_on_submit=True):
-        guess = st.number_input("Masukkan tebakan Anda:", 1, 100, step=1, key="guess")
-        submit_button = st.form_submit_button(label="Tebak")
-    if submit_button:
-        st.session_state.game_attempts += 1
-        secret = st.session_state.game_secret_number
-        if guess < secret:
-            st.warning("Terlalu rendah!")
-            st.session_state.game_history.append(f"{guess} (Rendah)")
-        elif guess > secret:
-            st.warning("Terlalu tinggi!")
-            st.session_state.game_history.append(f"{guess} (Tinggi)")
-        else:
-            st.success(f"Benar! Angkanya {secret}. Ditebak dalam {st.session_state.game_attempts} percobaan.")
-            st.balloons()
-            st.session_state.game_secret_number = random.randint(1, 100)
-            st.session_state.game_attempts = 0
-            st.session_state.game_history = []
-    if st.session_state.get('game_history'):
-        st.write("Riwayat Tebakan:", ", ".join(st.session_state.game_history))
 
 # ==============================================================================
 # NAVIGASI UTAMA APLIKASI
 # ==============================================================================
-st.sidebar.title("Menu Utama")
-# Hapus EOQ dari menu
+st.sidebar.title("🎮 Menu Utama")
+# Jadikan Game sebagai pilihan pertama/default
 app_choice = st.sidebar.radio(
     "Pilih Aplikasi:",
-    ("📈 Analisis Portofolio", 
+    ("🔮 Arena Tebak Angka",
+     "📈 Analisis Portofolio", 
      "🐄 Panen Berkelanjutan",
-     "🎨 Geometri Fraktal (Batik)",
-     "🔮 Game Tebak Angka")
+     "🎨 Geometri Fraktal (Batik)")
 )
 st.sidebar.markdown("---")
 st.sidebar.image("https://www.ukri.ac.id/storage/upload/file/conten/file_1689928528lambang_foto_conten_.png", width=100)
-st.sidebar.info("Dashboard Analisis Interaktif.")
+st.sidebar.info("Dashboard Analisis & Game.")
 
-# Hapus EOQ dari logika pemanggilan fungsi
-if app_choice == "📈 Analisis Portofolio":
+if app_choice == "🔮 Arena Tebak Angka":
+    run_game_app()
+elif app_choice == "📈 Analisis Portofolio":
     run_portfolio_app()
 elif app_choice == "🐄 Panen Berkelanjutan":
     run_harvesting_app()
 elif app_choice == "🎨 Geometri Fraktal (Batik)":
     run_fractal_app()
-elif app_choice == "🔮 Game Tebak Angka":
-    run_game_app()
