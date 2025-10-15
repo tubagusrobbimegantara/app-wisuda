@@ -246,49 +246,165 @@ def run_harvesting_app():
 # APLIKASI 4: GEOMETRI FRAKTAL
 # ==============================================================================
 def run_fractal_app():
-    st.title("🎨 Visualisasi Fraktal Eye-Catching")
-    st.markdown("Jelajahi keindahan matematika fraktal dengan visualisasi warna yang cerah dan memukau. Pilih jenis fraktal untuk melihat pola unik yang dihasilkan.")
-    col1, col2 = st.columns(2)
+    import matplotlib.pyplot as plt
+
+    st.title("🎨 Eksplorasi Fraktal Interaktif")
+    st.markdown("Jelajahi pola **fraktal klasik dan modern** yang muncul dari aturan sederhana namun menghasilkan keindahan kompleks ✨.")
+    col1, col2 = st.columns([1, 1])
+
     with col1:
-        fractal_type = st.selectbox("Pilih Jenis Fraktal", ("Segitiga Sierpinski", "Kapal Terbakar", "Mandelbrot Klasik"))
+        fractal_type = st.selectbox(
+            "🌀 Pilih Jenis Fraktal",
+            (
+                "Segitiga Sierpinski",
+                "Kapal Terbakar",
+                "Mandelbrot Klasik",
+                "Dragon Curve",
+                "Koch Snowflake",
+                "Pohon Fraktal"
+            )
+        )
     with col2:
-        if fractal_type == "Segitiga Sierpinski":
-            iterations = st.slider("Jumlah Titik (Detail)", 1, 10, 6, 1, help="Semakin tinggi, semakin detail dan padat segitiga.")
-        else:
-            iterations = st.slider("Jumlah Iterasi (Detail)", 20, 300, 75, 10, help="Semakin tinggi, semakin detail polanya.")
+        iterations = st.slider("🔁 Jumlah Iterasi / Detail", 3, 200, 20, 1)
+        color_scheme = st.selectbox(
+            "🎨 Skema Warna",
+            ("Plasma", "Viridis", "Cividis", "Inferno", "Turbo", "Rainbow")
+        )
+
+    # Fungsi Fraktal
     @st.cache_data
     def generate_fractal(width, height, max_iter, type):
         if type == "Segitiga Sierpinski":
-            points = np.array([[width/2, 0], [0, height-1], [width-1, height-1]])
+            points = np.array([[width / 2, 0], [0, height - 1], [width - 1, height - 1]])
             p = np.array([random.uniform(0, width), random.uniform(0, height)])
             image_data = np.zeros((height, width))
             for _ in range(max_iter * 50000):
                 target_vertex = random.choice(points)
                 p = (p + target_vertex) / 2
-                x_coord, y_coord = int(p[0]), int(p[1])
-                if 0 <= x_coord < width and 0 <= y_coord < height:
-                    image_data[y_coord, x_coord] = 1
+                x, y = int(p[0]), int(p[1])
+                if 0 <= x < width and 0 <= y < height:
+                    image_data[y, x] = 1
             return image_data
-        else:
+
+        elif type in ["Mandelbrot Klasik", "Kapal Terbakar"]:
             x, y = np.linspace(-2, 2, width), np.linspace(-2, 2, height)
-            c = x[:, np.newaxis] + 1j * y[np.newaxis, :]; z = np.zeros_like(c, dtype=complex)
+            c = x[:, np.newaxis] + 1j * y[np.newaxis, :]
+            z = np.zeros_like(c, dtype=complex)
             output = np.zeros(c.shape)
             for it in range(max_iter):
                 not_diverged = np.abs(z) < 10
                 output[not_diverged] = it
                 if type == "Mandelbrot Klasik":
-                    z[not_diverged] = z[not_diverged]**2 + c[not_diverged]
-                elif type == "Kapal Terbakar":
+                    z[not_diverged] = z[not_diverged] ** 2 + c[not_diverged]
+                else:
                     z_abs = np.abs(z[not_diverged].real) + 1j * np.abs(z[not_diverged].imag)
-                    z[not_diverged] = z_abs**2 + c[not_diverged]
+                    z[not_diverged] = z_abs ** 2 + c[not_diverged]
             return output
-    with st.spinner(f"Menciptakan '{fractal_type}' dengan {iterations} iterasi..."):
-        img_width, img_height = 800, 800 
-        fractal_data = generate_fractal(img_width, img_height, iterations, fractal_type)
-        selected_colorscale = 'Plasma'
-        fig = go.Figure(data=go.Heatmap(z=fractal_data, colorscale=selected_colorscale, showscale=False))
-        fig.update_layout(title=f"Fraktal: {fractal_type}", xaxis_visible=False, yaxis_visible=False, height=600, template='plotly_dark')
+
+        elif type == "Dragon Curve":
+            # Algoritma L-System
+            axiom = "FX"
+            rules = {"X": "X+YF+", "Y": "-FX-Y"}
+            path = axiom
+            for _ in range(min(max_iter, 15)):  # 15 iterasi sudah kompleks
+                path = "".join(rules.get(c, c) for c in path)
+            x, y, angle = 0, 0, 0
+            coords = [(x, y)]
+            for cmd in path:
+                if cmd == "F":
+                    x += math.cos(math.radians(angle))
+                    y += math.sin(math.radians(angle))
+                    coords.append((x, y))
+                elif cmd == "+":
+                    angle += 90
+                elif cmd == "-":
+                    angle -= 90
+            coords = np.array(coords)
+            return coords
+
+        elif type == "Koch Snowflake":
+            def koch_curve(p1, p2, depth):
+                if depth == 0:
+                    return [p1, p2]
+                else:
+                    p1, p2 = np.array(p1), np.array(p2)
+                    delta = (p2 - p1) / 3
+                    pA = p1 + delta
+                    pB = p1 + 2 * delta
+                    angle = math.pi / 3
+                    pC = pA + np.array([delta[0] * math.cos(angle) - delta[1] * math.sin(angle),
+                                        delta[0] * math.sin(angle) + delta[1] * math.cos(angle)])
+                    return (koch_curve(p1, pA, depth - 1) +
+                            koch_curve(pA, pC, depth - 1)[1:] +
+                            koch_curve(pC, pB, depth - 1)[1:] +
+                            koch_curve(pB, p2, depth - 1)[1:])
+
+            p1, p2, p3 = [0, 0], [1, 0], [0.5, math.sin(math.pi / 3)]
+            points = (koch_curve(p1, p2, iterations) +
+                      koch_curve(p2, p3, iterations)[1:] +
+                      koch_curve(p3, p1, iterations)[1:])
+            return np.array(points)
+
+        elif type == "Pohon Fraktal":
+            def draw_tree(x, y, angle, depth):
+                if depth == 0:
+                    return []
+                length = depth * 2
+                x2 = x + int(math.cos(math.radians(angle)) * length)
+                y2 = y - int(math.sin(math.radians(angle)) * length)
+                lines = [((x, y), (x2, y2))]
+                lines += draw_tree(x2, y2, angle - 20, depth - 1)
+                lines += draw_tree(x2, y2, angle + 20, depth - 1)
+                return lines
+
+            lines = draw_tree(0, 0, 90, min(iterations, 10))
+            return lines
+
+    with st.spinner(f"🧠 Membuat '{fractal_type}' dengan {iterations} iterasi..."):
+        width, height = 600, 600
+        data = generate_fractal(width, height, iterations, fractal_type)
+
+        fig = go.Figure()
+
+        if fractal_type in ["Segitiga Sierpinski", "Mandelbrot Klasik", "Kapal Terbakar"]:
+            fig.add_trace(go.Heatmap(z=data, colorscale=color_scheme, showscale=False))
+            fig.update_layout(
+                title=f"Fraktal: {fractal_type}",
+                xaxis_visible=False, yaxis_visible=False,
+                height=600, template='plotly_dark'
+            )
+
+        elif fractal_type in ["Dragon Curve", "Koch Snowflake"]:
+            fig.add_trace(go.Scatter(x=data[:, 0], y=data[:, 1],
+                                     mode='lines', line=dict(color='cyan', width=2)))
+            fig.update_layout(
+                title=f"Fraktal: {fractal_type}",
+                xaxis_visible=False, yaxis_visible=False,
+                height=600, template='plotly_dark'
+            )
+
+        elif fractal_type == "Pohon Fraktal":
+            for (x1, y1), (x2, y2) in data:
+                fig.add_trace(go.Scatter(x=[x1, x2], y=[y1, y2],
+                                         mode='lines', line=dict(color='lightgreen', width=2)))
+            fig.update_layout(
+                title=f"Fraktal: {fractal_type}",
+                xaxis_visible=False, yaxis_visible=False,
+                height=600, template='plotly_dark'
+            )
+
         st.plotly_chart(fig, use_container_width=True)
+
+        # Download
+        buf = BytesIO()
+        fig.write_image(buf, format="png")
+        st.download_button(
+            label="📥 Download Fraktal",
+            data=buf.getvalue(),
+            file_name=f"{fractal_type.replace(' ', '_')}.png",
+            mime="image/png"
+        )
+
 
 # ==============================================================================
 # NAVIGASI UTAMA APLIKASI
