@@ -300,7 +300,7 @@ def run_portfolio_app():
 st.sidebar.title("Menu Utama")
 app_choice = st.sidebar.radio(
     "Pilih Aplikasi:",
-    ("📈 Analisis Portofolio", "📦 Kalkulator Persediaan (EOQ)", "🔮 Game Tebak Angka")
+    ( "🔮 Game Tebak Angka", "📈 Analisis Portofolio", "📦 Kalkulator Persediaan (EOQ)")
 )
 st.sidebar.markdown("---")
 st.sidebar.info("Dashboard ini dibuat untuk analisis interaktif.")
