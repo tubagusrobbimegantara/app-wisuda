@@ -111,39 +111,6 @@ def run_portfolio_app():
                 st.plotly_chart(fig, use_container_width=True)
 
 # ==============================================================================
-# APLIKASI 2: KALKULATOR PERSEDIAAN (EOQ) (Tidak Ada Perubahan)
-# ==============================================================================
-def run_eoq_app():
-    st.title("📦 Kalkulator Keputusan Persediaan (EOQ)")
-    st.markdown("Unggah data penjualan bulanan Anda dalam format Excel atau CSV untuk mendapatkan rekomendasi pemesanan barang yang optimal.")
-    st.write("---")
-    with st.expander("Lihat Petunjuk Format & Unduh Template"):
-        st.info("Pastikan file Anda memiliki satu kolom dengan nama header `Penjualan` yang berisi data penjualan unit per periode (misal, per bulan).")
-        sample_df = pd.DataFrame({'Penjualan': [100, 110, 120, 105, 115, 130, 140, 125, 110, 100, 105, 120]})
-        st.dataframe(sample_df, use_container_width=True)
-        st.download_button(label="Unduh Template Excel (.xlsx)", data=to_excel(sample_df), file_name='template_penjualan_eoq.xlsx', mime='application/vnd.ms-excel')
-    st.subheader("⚙️ Masukkan Parameter & Data")
-    c1, c2, c3, c4 = st.columns(4)
-    with c1: uploaded_file = st.file_uploader("1. Unggah File Penjualan", type=['csv', 'xlsx'], label_visibility="collapsed")
-    with c2: S = st.number_input("Biaya Pesan (S)", 0.0, value=50000.0, step=1000.0, format="%.0f", help="Biaya tetap setiap kali memesan barang.")
-    with c3: H = st.number_input("Biaya Simpan/Unit (H)", 0.01, value=5000.0, step=100.0, format="%.0f", help="Biaya menyimpan satu unit barang selama setahun.")
-    with c4: L = st.number_input("Lead Time (Hari)", 1, value=7, step=1, help="Waktu tunggu dari pemesanan hingga barang tiba.")
-    if st.button("💡 Buat Rekomendasi Keputusan", type="primary", use_container_width=True):
-        if uploaded_file is None: st.warning("Mohon unggah file data penjualan."); return
-        try:
-            df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith('.csv') else pd.read_excel(uploaded_file)
-            if 'Penjualan' not in df.columns: st.error("Format Salah: File tidak memiliki kolom 'Penjualan'."); return
-            D = df['Penjualan'].sum()
-            if D <= 0: st.info("Total penjualan nol. Tidak perlu memesan."); return
-            eoq = math.sqrt((2 * D * S) / H)
-            rop = (D / 365) * L
-            st.header("🎯 Keputusan Optimal Anda")
-            st.success(f"**Lakukan pemesanan sebanyak {eoq:,.0f} unit setiap kali sisa persediaan di gudang mencapai {rop:,.0f} unit.**")
-            with st.expander("Lihat Detail Hasil Perhitungan"):
-                m1, m2, m3 = st.columns(3); m1.metric("Total Permintaan Tahunan (D)", f"{D:,.0f} unit"); m2.metric("Kuantitas Pesan Optimal (EOQ)", f"{eoq:,.0f} unit"); m3.metric("Titik Pemesanan Kembali (ROP)", f"{rop:,.0f} unit")
-        except Exception as e: st.error(f"Terjadi error saat memproses file: {e}")
-
-# ==============================================================================
 # APLIKASI 3: GAME TEBAK ANGKA (Tidak Ada Perubahan)
 # ==============================================================================
 def run_game_app():
@@ -259,11 +226,10 @@ def run_harvesting_app():
 st.sidebar.title("Menu Utama")
 app_choice = st.sidebar.radio(
     "Pilih Aplikasi:",
-    ("📦 Kalkulator Persediaan (EOQ)", 
+    ( "🔮 Game Tebak Angka",
      "📈 Analisis Portofolio", 
      "🐄 Panen Berkelanjutan",
-     "🌌 Geometri Fraktal",
-     "🔮 Game Tebak Angka")
+     "🌌 Geometri Fraktal")
 )
 st.sidebar.markdown("---")
 st.sidebar.image("https://www.ukri.ac.id/storage/upload/file/conten/file_1689928528lambang_foto_conten_.png", width=100)
@@ -271,8 +237,6 @@ st.sidebar.info("Dashboard Analisis Interaktif.")
 
 if app_choice == "📈 Analisis Portofolio":
     run_portfolio_app()
-elif app_choice == "📦 Kalkulator Persediaan (EOQ)":
-    run_eoq_app()
 elif app_choice == "🐄 Panen Berkelanjutan":
     run_harvesting_app()
 elif app_choice == "🌌 Geometri Fraktal":
