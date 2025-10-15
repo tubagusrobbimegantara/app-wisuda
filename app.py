@@ -24,6 +24,28 @@ st.set_page_config(
 # ==============================================================================
 # APLIKASI UTAMA: GAME TEBAK ANGKA (DENGAN DESAIN BARU DARI ANDA)
 # ==============================================================================
+import streamlit as st
+import random
+import time
+from io import BytesIO
+
+# Pustaka untuk Portofolio, Fraktal, & Harvesting
+import yfinance as yf
+import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
+from datetime import datetime
+
+# --- Konfigurasi Halaman Utama ---
+st.set_page_config(
+    page_title="Arena Game & Analisis",
+    page_icon="🎮",
+    layout="wide"
+)
+
+# ==============================================================================
+# APLIKASI UTAMA: GAME TEBAK ANGKA (DENGAN DESAIN BARU DARI ANDA)
+# ==============================================================================
 def run_game_app():
     # --- CSS Modern UI (Glassmorphism & Neon Glow) ---
     st.markdown("""
@@ -137,9 +159,7 @@ def run_game_app():
                     st.session_state.feedback = f"🎉 Angka {secret} adalah tebakanmu! Kamu butuh {st.session_state.attempts} percobaan."
                     st.session_state.game_over = True
 
-                closeness = max(0, 1 - diff / 100)
-                progress_bar = st.progress(closeness)
-                time.sleep(0.4)
+                # --- PERBAIKAN: Hapus progress bar dan time.sleep ---
                 st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
