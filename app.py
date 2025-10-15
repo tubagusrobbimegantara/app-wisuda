@@ -20,118 +20,168 @@ st.set_page_config(
 # ==============================================================================
 # APLIKASI UTAMA: GAME TEBAK ANGKA (DENGAN ALERT TOAST)
 # ==============================================================================
-def run_game_app():
-    # --- CSS Kustom untuk Tampilan Game Modern ---
-    st.markdown("""
-        <style>
-            .main > div { padding-top: 2rem; }
-            .block-container { padding-top: 2rem; }
-            .game-container {
-                background: linear-gradient(145deg, #2b2b2b, #1e1e1e);
-                padding: 2rem; border-radius: 20px;
-                color: #e0e0e0;
-                min-height: 250px;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-            }
-            .stNumberInput input {
-                background-color: #333; color: #fff; border: 2px solid #555;
-                border-radius: 10px; text-align: center; font-size: 2rem; font-weight: bold;
-            }
-            .stButton>button {
-                background: linear-gradient(145deg, #00d4ff, #009de0); color: white; font-weight: bold;
-                border: none; border-radius: 12px; padding: 12px 24px; width: 100%;
-                box-shadow: 5px 5px 10px #1c1c1c, -5px -5px 10px #2e2e2e;
-                transition: all 0.2s ease-in-out;
-            }
-            .stButton>button:hover {
-                transform: scale(1.05);
-                box-shadow: 7px 7px 15px #1c1c1c, -7px -7px 15px #2e2e2e;
-            }
-            .score-box {
-                background-color: #252525; text-align: center; padding: 1rem;
-                border-radius: 15px; border: 1px solid #444;
-            }
-            .game-message {
-                text-align: center;
-                font-size: 1.2rem;
-                font-weight: bold;
-                padding: 1rem;
-                border-radius: 10px;
-                margin-bottom: 1rem;
-                color: #e0e0e0;
-            }
-        </style>
-    """, unsafe_allow_html=True)
 
-    if 'secret_number' not in st.session_state:
-        st.session_state.secret_number = random.randint(1, 100)
-        st.session_state.attempts = 0
-        st.session_state.high_score = st.session_state.get('high_score', 999)
-        st.session_state.game_over = False
-        st.session_state.message = "Mulai permainan dengan menebak angka!"
-    def restart_game():
-        st.session_state.secret_number = random.randint(1, 100)
-        st.session_state.attempts = 0
-        st.session_state.game_over = False
-        st.session_state.message = "Game baru dimulai! Angka rahasia telah direset."
+import time
 
-    st.title("🎮 Arena Tebak Angka 🔮")
-    st.markdown("Uji intuisimu! Aku telah memilih angka rahasia antara **1 dan 100**. Bisakah kamu menebaknya dengan percobaan sesedikit mungkin?")
-    st.write("---")
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        st.markdown('<div class="game-container">', unsafe_allow_html=True)
-        
-        message_placeholder = st.empty()
+# --- Konfigurasi Halaman ---
+st.set_page_config(
+    page_title="🎯 Tebak Angka Arena",
+    page_icon="🎮",
+    layout="wide"
+)
 
-        if st.session_state.game_over:
-            message_placeholder.markdown(f'<p class="game-message">{st.session_state.message}</p>', unsafe_allow_html=True)
-            st.balloons()
-            if st.button("Main Lagi? 🔄"):
-                restart_game()
-                st.rerun()
-        else:
-            message_placeholder.markdown(f'<p class="game-message">{st.session_state.message}</p>', unsafe_allow_html=True)
-            with st.form(key="guess_form"):
-                guess = st.number_input("Masukkan tebakanmu di sini:", min_value=1, max_value=100, step=1, label_visibility="collapsed")
-                submit = st.form_submit_button(label="🔑 Tebak!")
-            if submit:
-                st.session_state.attempts += 1
-                secret = st.session_state.secret_number
-                difference = abs(guess - secret)
+# --- CSS Modern UI (Glassmorphism & Neon Glow) ---
+st.markdown("""
+    <style>
+    body {
+        background: radial-gradient(circle at top left, #111, #000);
+        color: #fff;
+    }
+    .main-title {
+        font-size: 2.5rem;
+        text-align: center;
+        font-weight: 900;
+        background: linear-gradient(90deg, #00f2ff, #ff00d4);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .game-box {
+        background: rgba(255,255,255,0.08);
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 0 25px rgba(0,255,255,0.1);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease-in-out;
+    }
+    .game-box:hover {
+        box-shadow: 0 0 40px rgba(0,255,255,0.2);
+    }
+    .score-panel {
+        text-align: center;
+        background: rgba(255,255,255,0.05);
+        padding: 1.5rem;
+        border-radius: 15px;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .stButton>button {
+        background: linear-gradient(135deg, #00d4ff, #007bff);
+        border: none;
+        border-radius: 12px;
+        padding: 0.8rem 2rem;
+        font-weight: bold;
+        color: white;
+        box-shadow: 0px 0px 10px #00d4ff55;
+        transition: all 0.2s ease-in-out;
+    }
+    .stButton>button:hover {
+        transform: scale(1.05);
+        box-shadow: 0px 0px 20px #00d4ff88;
+    }
+    .result-message {
+        text-align: center;
+        font-size: 1.2rem;
+        padding: 1rem;
+        border-radius: 12px;
+        margin-top: 1rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-                if guess < secret:
-                    st.toast("Terlalu Rendah!", icon="📉") # ALERT BARU
-                    if difference > 15:
-                        st.session_state.message = f"Masih terlalu jauh! Angka {guess} **sangat RENDAH** 🥶"
-                    else:
-                        st.session_state.message = f"Anda semakin dekat! Tapi {guess} masih terlalu **rendah** 🤔"
-                elif guess > secret:
-                    st.toast("Terlalu Tinggi!", icon="📈") # ALERT BARU
-                    if difference > 15:
-                        st.session_state.message = f"Masih terlalu jauh! Angka {guess} **sangat TINGGI** 🔥"
-                    else:
-                        st.session_state.message = f"Anda semakin dekat! Tapi {guess} masih terlalu **tinggi** 🤔"
+# --- Inisialisasi Session ---
+if 'secret_number' not in st.session_state:
+    st.session_state.secret_number = random.randint(1, 100)
+    st.session_state.attempts = 0
+    st.session_state.high_score = st.session_state.get('high_score', 999)
+    st.session_state.game_over = False
+    st.session_state.feedback = "Ayo mulai! Aku sudah memilih angka rahasia 🎲"
+
+# --- Fungsi untuk restart game ---
+def restart_game():
+    st.session_state.secret_number = random.randint(1, 100)
+    st.session_state.attempts = 0
+    st.session_state.game_over = False
+    st.session_state.feedback = "Game baru dimulai! Coba tebak angkanya 🎯"
+
+# --- Header ---
+st.markdown("<h1 class='main-title'>🎮 Arena Tebak Angka 🔮</h1>", unsafe_allow_html=True)
+st.write("Tebak angka rahasia antara **1 dan 100**. Coba capai rekor **percobaan paling sedikit!**")
+
+st.divider()
+
+# --- Layout Utama ---
+col1, col2 = st.columns([2, 1], gap="large")
+
+# -------------------------------
+# 🎯 AREA GAME
+# -------------------------------
+with col1:
+    st.markdown('<div class="game-box">', unsafe_allow_html=True)
+    
+    st.markdown(f"### 💬 {st.session_state.feedback}")
+
+    if st.session_state.game_over:
+        st.success("🎉 Selamat! Kamu menebak dengan benar!")
+        st.balloons()
+        if st.session_state.attempts < st.session_state.high_score:
+            st.session_state.high_score = st.session_state.attempts
+            st.toast("🏆 Rekor Baru!", icon="🥇")
+        if st.button("🔁 Main Lagi"):
+            restart_game()
+            st.rerun()
+    else:
+        guess = st.number_input("Masukkan tebakanmu:", min_value=1, max_value=100, step=1, label_visibility="visible")
+        if st.button("🚀 Tebak Sekarang!"):
+            st.session_state.attempts += 1
+            secret = st.session_state.secret_number
+            diff = abs(guess - secret)
+
+            if guess < secret:
+                st.toast("📉 Terlalu rendah!")
+                if diff > 20:
+                    st.session_state.feedback = f"Masih jauh! {guess} terlalu **rendah** 🧊"
                 else:
-                    st.toast("Tepat Sasaran!", icon="🎯") # ALERT BARU
-                    st.session_state.game_over = True
-                    st.session_state.message = f"🎉 Selamat! Kamu berhasil menebak angka **{secret}**!"
-                    if st.session_state.attempts < st.session_state.high_score:
-                        st.session_state.high_score = st.session_state.attempts
-                        st.session_state.message += " Kamu mencetak **REKOR BARU**!"
-                st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-    with col2:
-        st.subheader("📊 Papan Skor")
-        with st.container(border=True):
-            st.markdown('<div class="score-box">', unsafe_allow_html=True)
-            st.metric(label="Percobaan Saat Ini", value=f"{st.session_state.attempts} 🎯")
-            st.markdown('</div><br>', unsafe_allow_html=True)
-            st.markdown('<div class="score-box">', unsafe_allow_html=True)
-            st.metric(label="Skor Terbaik (Percobaan Terendah)", value=f"{st.session_state.high_score} 🏆")
-            st.markdown('</div>', unsafe_allow_html=True)
+                    st.session_state.feedback = f"Hampir! {guess} sedikit **di bawah** 🎯"
+            elif guess > secret:
+                st.toast("📈 Terlalu tinggi!")
+                if diff > 20:
+                    st.session_state.feedback = f"Masih jauh! {guess} terlalu **tinggi** 🔥"
+                else:
+                    st.session_state.feedback = f"Hampir! {guess} sedikit **di atas** 🎯"
+            else:
+                st.toast("🎯 Tepat sekali!")
+                st.session_state.feedback = f"🎉 Angka {secret} adalah tebakanmu! Kamu butuh {st.session_state.attempts} percobaan."
+                st.session_state.game_over = True
+
+            # progress bar untuk kedekatan tebakan
+            closeness = max(0, 1 - diff/100)
+            st.progress(closeness)
+            time.sleep(0.5)
+            st.rerun()
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# -------------------------------
+# 📊 PANEL SKOR
+# -------------------------------
+with col2:
+    st.markdown("## 📊 Papan Skor")
+    st.markdown('<div class="score-panel">', unsafe_allow_html=True)
+    st.metric(label="Percobaan Saat Ini", value=st.session_state.attempts)
+    st.metric(label="Skor Terbaik (Percobaan Tersedikit)", value=st.session_state.high_score)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown("### ⚡ Statistik Permainan")
+    if st.session_state.attempts > 0:
+        accuracy = max(0, 100 - abs(st.session_state.secret_number - guess))
+        st.progress(accuracy/100)
+        st.caption(f"🔥 Kedekatan tebakan terakhir: {accuracy:.1f}%")
+    else:
+        st.caption("Belum ada percobaan.")
+
+# --- Footer ---
+st.divider()
+st.caption("💡 Tips: Gunakan strategi *binary search* agar cepat menebak angka rahasia.")
+
 
 # ==============================================================================
 # APLIKASI 2: ANALISIS PORTOFOLIO
