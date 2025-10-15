@@ -185,7 +185,6 @@ def run_harvesting_app():
     st.markdown("Aplikasi ini mensimulasikan dampak panen tahunan terhadap populasi ternak. Gunakan model ini untuk menentukan apakah tingkat panen Anda berkelanjutan atau akan menyebabkan kepunahan.")
     st.write("---")
 
-    # --- PERUBAHAN: BUAT DUA KOLOM ---
     col1, col2 = st.columns([2, 1])
 
     with col2:
@@ -195,12 +194,12 @@ def run_harvesting_app():
         r = st.slider("Laju Pertumbuhan (r)", 0.05, 1.0, 0.2, 0.05, format="%.2f", help="Laju pertumbuhan alami populasi per tahun.")
         H = st.slider("Jumlah Panen per Tahun (H)", 0, 200, 40, 5, help="Jumlah ternak yang diambil/dipanen setiap tahun.")
     
-    # --- SIMULASI (LOGIKA TETAP SAMA) ---
+    # --- SIMULASI ---
     years = 50
     population = [p0]
     for _ in range(1, years):
         next_pop = population[-1] + r * population[-1] * (1 - population[-1] / K) - H
-        population.append(max(0, next_pop)) # Gunakan max(0, ...) untuk mencegah populasi negatif
+        population.append(max(0, next_pop))
     
     df_pop = pd.DataFrame({'Tahun': range(years), 'Populasi': population})
 
@@ -211,17 +210,22 @@ def run_harvesting_app():
         fig.update_layout(xaxis_title="Tahun", yaxis_title="Jumlah Ekor")
         st.plotly_chart(fig, use_container_width=True)
 
-        # --- KESIMPULAN & REKOMENDASI ---
+        # --- PERUBAHAN: KESIMPULAN & REKOMENDASI LEBIH JELAS ---
         final_population = population[-1]
         msy = (r * K) / 4 # Hasil Lestari Maksimum (Maximum Sustainable Yield)
 
-        st.header("🎯 Kesimpulan & Rekomendasi")
+        st.header("🎯 Status & Rekomendasi")
+        
+        # Analisis Status
         if final_population <= 0:
-            st.error(f"**Tidak Berkelanjutan.** Dengan tingkat panen {H} ekor per tahun, populasi ternak akan habis.")
+            st.error(f"**Status: Tidak Berkelanjutan.** Dengan tingkat panen {H} ekor per tahun, populasi ternak akan habis.")
         elif H > msy:
-            st.warning(f"**Berisiko.** Meskipun populasi bertahan, tingkat panen {H} ekor/tahun melebihi **Hasil Lestari Maksimum (MSY)** sebesar **{msy:.0f} ekor/tahun**. Populasi rentan terhadap perubahan kondisi.")
+            st.warning(f"**Status: Berisiko.** Tingkat panen Anda ({H} ekor/tahun) melebihi batas lestari maksimum, membuat populasi rentan.")
         else:
-            st.success(f"**Berkelanjutan.** Tingkat panen {H} ekor per tahun berada di bawah **Hasil Lestari Maksimum (MSY)** sebesar **{msy:.0f} ekor/tahun**. Populasi dapat pulih dan tetap stabil.")
+            st.success(f"**Status: Berkelanjutan.** Tingkat panen Anda ({H} ekor/tahun) berada pada level yang aman dan populasi dapat bertahan.")
+
+        # Rekomendasi Optimal
+        st.info(f"💡 **Rekomendasi panen optimal** agar populasi tetap lestari (MSY) adalah **{msy:,.0f} ekor/tahun**.")
 
 # ==============================================================================
 # NAVIGASI UTAMA APLIKASI
