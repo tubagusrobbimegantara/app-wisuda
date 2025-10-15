@@ -18,7 +18,7 @@ st.set_page_config(
 )
 
 # ==============================================================================
-# APLIKASI UTAMA: GAME TEBAK ANGKA
+# APLIKASI UTAMA: GAME TEBAK ANGKA (KODE DIPERBAIKI)
 # ==============================================================================
 def run_game_app():
     # --- CSS Kustom untuk Tampilan Game Modern ---
@@ -31,8 +31,11 @@ def run_game_app():
                 padding: 2rem; border-radius: 20px;
                 box-shadow: 10px 10px 20px #1c1c1c, -10px -10px 20px #2e2e2e;
                 color: #e0e0e0;
+                min-height: 250px; /* Memberi tinggi minimum agar layout stabil */
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
             }
-            .st-emotion-cache-10trblm { color: #e0e0e0; font-family: 'Consolas', 'Courier New', monospace; }
             .stNumberInput input {
                 background-color: #333; color: #fff; border: 2px solid #555;
                 border-radius: 10px; text-align: center; font-size: 2rem; font-weight: bold;
@@ -50,6 +53,23 @@ def run_game_app():
             .score-box {
                 background-color: #252525; text-align: center; padding: 1rem;
                 border-radius: 15px; border: 1px solid #444;
+            }
+            /* Style baru untuk menghilangkan kotak buram */
+            .game-message {
+                text-align: center;
+                font-size: 1.2rem;
+                font-weight: bold;
+                padding: 1rem;
+                border-radius: 10px;
+                margin-bottom: 1rem;
+            }
+            .info-message {
+                color: #a1d9ef; /* Warna biru muda untuk info */
+                background-color: #2c3e50;
+            }
+            .success-message {
+                color: #a8e6cf; /* Warna hijau muda untuk sukses */
+                background-color: #2c3e50;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -72,15 +92,20 @@ def run_game_app():
     col1, col2 = st.columns([2, 1])
     with col1:
         st.markdown('<div class="game-container">', unsafe_allow_html=True)
+        
+        # Gunakan st.empty untuk menampung pesan agar bisa diganti-ganti
         message_placeholder = st.empty()
+
         if st.session_state.game_over:
-            message_placeholder.success(st.session_state.message)
+            # Tampilkan pesan sukses dengan style baru
+            message_placeholder.markdown(f'<p class="game-message success-message">{st.session_state.message}</p>', unsafe_allow_html=True)
             st.balloons()
             if st.button("Main Lagi? 🔄"):
                 restart_game()
                 st.rerun()
         else:
-            message_placeholder.info(f"**Petunjuk:** {st.session_state.message}")
+            # Tampilkan pesan info dengan style baru
+            message_placeholder.markdown(f'<p class="game-message info-message"><strong>Petunjuk:</strong> {st.session_state.message}</p>', unsafe_allow_html=True)
             with st.form(key="guess_form"):
                 guess = st.number_input("Masukkan tebakanmu di sini:", min_value=1, max_value=100, step=1, label_visibility="collapsed")
                 submit = st.form_submit_button(label="🔑 Tebak!")
@@ -224,6 +249,7 @@ def run_harvesting_app():
         st.header("🎯 Status & Rekomendasi")
         if final_population <= 1:
             st.error(f"**Status: Tidak Berkelanjutan.** Dengan tingkat panen {H} ekor per tahun, populasi ternak akan habis.")
+            st.info(f"💡 **Rekomendasi panen optimal** (MSY) untuk parameter ini adalah **{msy:,.0f} ekor/tahun**. Ini adalah jumlah panen terbanyak yang bisa dilakukan setiap tahun agar populasi tetap lestari dalam jangka panjang.")
         elif H > msy:
             st.warning(f"**Status: Berisiko.** Tingkat panen Anda ({H} ekor/tahun) melebihi batas lestari maksimum. Populasi akan menurun dalam jangka panjang dan rentan punah.")
             st.info(f"💡 **Rekomendasi panen optimal** (MSY) untuk parameter ini adalah **{msy:,.0f} ekor/tahun**. Ini adalah jumlah panen terbanyak yang bisa dilakukan setiap tahun agar populasi tetap lestari dalam jangka panjang.")
