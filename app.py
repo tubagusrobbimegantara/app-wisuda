@@ -21,6 +21,8 @@ st.set_page_config(
 # APLIKASI UTAMA: GAME TEBAK ANGKA (DENGAN ALERT TOAST)
 # ==============================================================================
 
+import streamlit as st
+import random
 import time
 
 # --- Konfigurasi Halaman ---
@@ -87,15 +89,19 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Inisialisasi Session ---
-if 'secret_number' not in st.session_state:
-    st.session_state.secret_number = random.randint(1, 100)
-    st.session_state.attempts = 0
-    st.session_state.high_score = st.session_state.get('high_score', 999)
-    st.session_state.game_over = False
-    st.session_state.feedback = "Ayo mulai! Aku sudah memilih angka rahasia 🎲"
+# --- INISIALISASI SESSION STATE (aman dan lengkap) ---
+defaults = {
+    "secret_number": random.randint(1, 100),
+    "attempts": 0,
+    "high_score": 999,
+    "game_over": False,
+    "feedback": "Ayo mulai! Aku sudah memilih angka rahasia 🎲"
+}
+for k, v in defaults.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
 
-# --- Fungsi untuk restart game ---
+# --- Fungsi Restart Game ---
 def restart_game():
     st.session_state.secret_number = random.randint(1, 100)
     st.session_state.attempts = 0
@@ -117,7 +123,7 @@ col1, col2 = st.columns([2, 1], gap="large")
 with col1:
     st.markdown('<div class="game-box">', unsafe_allow_html=True)
     
-    st.markdown(f"### 💬 {st.session_state.feedback}")
+    st.markdown(f"### 💬 {st.session_state.feedback}", unsafe_allow_html=True)
 
     if st.session_state.game_over:
         st.success("🎉 Selamat! Kamu menebak dengan benar!")
@@ -135,18 +141,23 @@ with col1:
             secret = st.session_state.secret_number
             diff = abs(guess - secret)
 
+            # --- Logika Inti ---
             if guess < secret:
                 st.toast("📉 Terlalu rendah!")
-                if diff > 20:
-                    st.session_state.feedback = f"Masih jauh! {guess} terlalu **rendah** 🧊"
+                if diff < 5:
+                    st.session_state.feedback = f"<span style='color:#00ff99'>🔥 Sangat dekat!</span> {guess} hanya sedikit **lebih rendah** dari angka rahasia!"
+                elif diff <= 20:
+                    st.session_state.feedback = f"⚡ Hampir! {guess} sedikit **di bawah** 🎯"
                 else:
-                    st.session_state.feedback = f"Hampir! {guess} sedikit **di bawah** 🎯"
+                    st.session_state.feedback = f"🥶 Masih jauh! {guess} terlalu **rendah**."
             elif guess > secret:
                 st.toast("📈 Terlalu tinggi!")
-                if diff > 20:
-                    st.session_state.feedback = f"Masih jauh! {guess} terlalu **tinggi** 🔥"
+                if diff < 5:
+                    st.session_state.feedback = f"<span style='color:#ff9933'>🔥 Sangat dekat!</span> {guess} hanya sedikit **lebih tinggi** dari angka rahasia!"
+                elif diff <= 20:
+                    st.session_state.feedback = f"⚡ Hampir! {guess} sedikit **di atas** 🎯"
                 else:
-                    st.session_state.feedback = f"Hampir! {guess} sedikit **di atas** 🎯"
+                    st.session_state.feedback = f"🥵 Masih jauh! {guess} terlalu **tinggi**."
             else:
                 st.toast("🎯 Tepat sekali!")
                 st.session_state.feedback = f"🎉 Angka {secret} adalah tebakanmu! Kamu butuh {st.session_state.attempts} percobaan."
@@ -155,7 +166,7 @@ with col1:
             # progress bar untuk kedekatan tebakan
             closeness = max(0, 1 - diff/100)
             st.progress(closeness)
-            time.sleep(0.5)
+            time.sleep(0.4)
             st.rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
@@ -172,6 +183,7 @@ with col2:
     
     st.markdown("### ⚡ Statistik Permainan")
     if st.session_state.attempts > 0:
+        last_guess = st.session_state.get("last_guess", 0)
         accuracy = max(0, 100 - abs(st.session_state.secret_number - guess))
         st.progress(accuracy/100)
         st.caption(f"🔥 Kedekatan tebakan terakhir: {accuracy:.1f}%")
