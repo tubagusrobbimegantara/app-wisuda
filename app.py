@@ -167,8 +167,12 @@ def run_portfolio_app():
     @st.cache_data
     def get_data(tickers, start_date, end_date):
         try:
+            # Selalu ambil kolom 'Close' untuk konsistensi
             data = yf.download(tickers, start=start_date, end=end_date, progress=False)['Close']
-            return data.dropna(axis=1) if isinstance(data, pd.DataFrame) else data.dropna()
+            # Jika hanya satu ticker, yfinance mengembalikan Series, ubah ke DataFrame
+            if isinstance(data, pd.Series):
+                data = data.to_frame(tickers)
+            return data.dropna(axis=1, how='all')
         except Exception:
             return pd.DataFrame()
 
@@ -204,9 +208,7 @@ def run_portfolio_app():
             # --- TAHAP 1: OPTIMISASI (IN-SAMPLE) ---
             st.header("1. Hasil Optimisasi (In-Sample: 2015-2023)")
             with st.spinner("Menjalankan optimisasi pada data 2015-2023..."):
-                in_sample_start, in_sample_end = '2015-01-01', '2023-12-31'
-                in_sample_data = get_data(selected_tickers, in_sample_start, in_sample_end)
-
+                in_sample_data = get_data(selected_tickers, '2015-01-01', '2023-12-31')
                 if in_sample_data.empty:
                     st.error("Gagal mendapatkan data In-Sample. Proses dihentikan."); return
 
@@ -233,53 +235,53 @@ def run_portfolio_app():
                 out_sample_portfolio_data = get_data(df_alokasi['Saham'].tolist(), out_sample_start, out_sample_end)
                 out_sample_benchmark_data = get_data(BENCHMARK_TICKER, out_sample_start, out_sample_end)
 
-                # ### PERBAIKAN DIMULAI DI SINI ###
-                # Fungsi untuk menghitung metrik dengan penanganan error
+                # ### FUNGSI DENGAN PERBAIKAN ###
                 def calculate_metrics(growth_series, returns_series):
-                    # Tambahkan pengecekan jika series kosong
+                    # Kondisi 1: Cek jika data kosong
                     if growth_series.empty or returns_series.empty:
-                        return {
-                            "Nilai Akhir": "N/A",
-                            "Total Return": "N/A",
-                            "Return Tahunan": "N/A",
-                            "Risiko Tahunan": "N/A"
-                        }
+                        return {"Nilai Akhir": "N/A", "Total Return": "N/A", "Return Tahunan": "N/A", "Risiko Tahunan": "N/A"}
                     
-                    total_return = (growth_series.iloc[-1] / growth_series.iloc[0]) - 1
+                    # Ekstrak nilai pertama dan terakhir
+                    last_val = growth_series.iloc[-1]
+                    first_val = growth_series.iloc[0]
+
+                    # Kondisi 2: Cek jika nilai yang diekstrak adalah Series (ambil nilai pertama)
+                    if isinstance(last_val, pd.Series): last_val = last_val.iloc[0]
+                    if isinstance(first_val, pd.Series): first_val = first_val.iloc[0]
+
+                    # Kondisi 3: Cek jika pembagi adalah nol
+                    if first_val == 0:
+                        return {"Nilai Akhir": "N/A", "Total Return": "N/A", "Return Tahunan": "N/A", "Risiko Tahunan": "N/A"}
+
+                    total_return = (last_val / first_val) - 1
                     trading_days = len(returns_series)
                     annualized_return = (1 + total_return)**(252/trading_days) - 1 if trading_days > 0 else 0
                     annualized_volatility = returns_series.std() * np.sqrt(252)
+                    
                     return {
-                        "Nilai Akhir": f"Rp {growth_series.iloc[-1]:,.0f}",
+                        "Nilai Akhir": f"Rp {last_val:,.0f}",
                         "Total Return": f"{total_return:.2%}",
                         "Return Tahunan": f"{annualized_return:.2%}",
                         "Risiko Tahunan": f"{annualized_volatility:.2%}"
                     }
+
+                # Hitung metrik portofolio & benchmark
+                portfolio_metrics, benchmark_metrics = {}, {}
                 
-                # Inisialisasi DataFrame kosong untuk metrik
-                portfolio_metrics = {}
-                benchmark_metrics = {}
-                
-                # Kalkulasi Kinerja Portofolio jika data ada
                 if not out_sample_portfolio_data.empty:
                     portfolio_returns = out_sample_portfolio_data.pct_change().dropna()
-                    if not portfolio_returns.empty:
-                        weighted_returns = portfolio_returns.dot(df_alokasi.set_index('Saham').loc[portfolio_returns.columns]['Bobot'])
-                        portfolio_growth = modal * (1 + weighted_returns).cumprod()
-                        portfolio_metrics = calculate_metrics(portfolio_growth, weighted_returns)
+                    weighted_returns = portfolio_returns.dot(df_alokasi.set_index('Saham').loc[portfolio_returns.columns]['Bobot'])
+                    portfolio_growth = modal * (1 + weighted_returns).cumprod()
+                    portfolio_metrics = calculate_metrics(portfolio_growth, weighted_returns)
 
-                # Kalkulasi Kinerja Benchmark (IHSG) jika data ada
                 if not out_sample_benchmark_data.empty:
-                    benchmark_returns = out_sample_benchmark_data.pct_change().dropna()
-                    if not benchmark_returns.empty:
-                        benchmark_growth = modal * (1 + benchmark_returns).cumprod()
-                        benchmark_metrics = calculate_metrics(benchmark_growth, benchmark_returns)
+                    benchmark_returns = out_sample_benchmark_data.pct_change().dropna().iloc[:, 0] # Ambil kolom pertama
+                    benchmark_growth = modal * (1 + benchmark_returns).cumprod()
+                    benchmark_metrics = calculate_metrics(benchmark_growth, benchmark_returns)
 
-                # Jika salah satu atau keduanya kosong, tampilkan peringatan
                 if not portfolio_metrics or not benchmark_metrics:
-                    st.warning("Tidak cukup data Out-of-Sample (2024-sekarang) untuk menampilkan perbandingan.")
-                    return
-
+                    st.warning("Tidak cukup data Out-of-Sample untuk melakukan backtesting lengkap."); return
+                
                 st.subheader("📊 Perbandingan Kinerja")
                 df_comparison = pd.DataFrame([portfolio_metrics, benchmark_metrics], index=["Portofolio Anda", "IHSG"]).T
                 st.table(df_comparison)
