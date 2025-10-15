@@ -26,16 +26,7 @@ def run_game_app():
         <style>
             .main > div { padding-top: 2rem; }
             .block-container { padding-top: 2rem; }
-            .game-container {
-                background: linear-gradient(145deg, #2b2b2b, #1e1e1e);
-                padding: 2rem; border-radius: 20px;
-                box-shadow: 10px 10px 20px #1c1c1c, -10px -10px 20px #2e2e2e;
-                color: #e0e0e_0;
-                min-height: 250px;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-            }
+ 
             .stNumberInput input {
                 background-color: #333; color: #fff; border: 2px solid #555;
                 border-radius: 10px; text-align: center; font-size: 2rem; font-weight: bold;
