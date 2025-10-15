@@ -94,8 +94,12 @@ def run_portfolio_app():
                     portfolio_growth = modal * (1 + weighted_returns).cumprod()
                     portfolio_metrics = calculate_metrics(portfolio_growth, weighted_returns)
                 if not out_sample_benchmark_data.empty:
-                    benchmark_returns = out_sample_benchmark_data.pct_change().dropna().iloc[:, 0]
-                    benchmark_growth = modal * (1 + benchmark_returns).cumprod()
+                    benchmark_returns = out_sample_benchmark_data.pct_change().dropna()
+                    # Handle jika benchmark hanya punya 1 kolom (Series) atau lebih (DataFrame)
+                    if isinstance(benchmark_returns, pd.Series):
+                        benchmark_growth = modal * (1 + benchmark_returns).cumprod()
+                    else:
+                        benchmark_growth = modal * (1 + benchmark_returns.iloc[:, 0]).cumprod()
                     benchmark_metrics = calculate_metrics(benchmark_growth, benchmark_returns)
                 if not portfolio_metrics or not benchmark_metrics: st.warning("Tidak cukup data Out-of-Sample untuk backtesting."); return
                 st.subheader("📊 Perbandingan Kinerja"); st.table(pd.DataFrame([portfolio_metrics, benchmark_metrics], index=["Portofolio Anda", "IHSG"]).T)
@@ -144,15 +148,32 @@ def run_eoq_app():
 # ==============================================================================
 def run_game_app():
     st.title("🔮 Game: Tebak Angka Misterius!")
-    if 'game_secret_number' not in st.session_state: st.session_state.game_secret_number = random.randint(1, 100); st.session_state.game_attempts = 0; st.session_state.game_history = []
+    if 'game_secret_number' not in st.session_state:
+        st.session_state.game_secret_number = random.randint(1, 100)
+        st.session_state.game_attempts = 0
+        st.session_state.game_history = []
     st.markdown("Saya telah memilih angka rahasia antara 1 dan 100. Coba tebak!")
-    guess = st.number_input("Masukkan tebakan Anda:", 1, 100, step=1, key="guess")
-    if st.button("Tebak"):
-        st.session_state.game_attempts += 1; secret = st.session_state.game_secret_number
-        if guess < secret: st.warning("Terlalu rendah!"); st.session_state.game_history.append(f"{guess} (Rendah)")
-        elif guess > secret: st.warning("Terlalu tinggi!"); st.session_state.game_history.append(f"{guess} (Tinggi)")
-        else: st.success(f"Benar! Angkanya {secret}. Ditebak dalam {st.session_state.game_attempts} percobaan."); st.balloons(); st.session_state.game_secret_number = random.randint(1, 100); st.session_state.game_attempts = 0; st.session_state.game_history = []
-    if st.session_state.get('game_history'): st.write("Riwayat Tebakan:", st.session_state.game_history)
+    with st.form(key="game_form", clear_on_submit=True):
+        guess = st.number_input("Masukkan tebakan Anda:", 1, 100, step=1, key="guess")
+        submit_button = st.form_submit_button(label="Tebak")
+    if submit_button:
+        st.session_state.game_attempts += 1
+        secret = st.session_state.game_secret_number
+        if guess < secret:
+            st.warning("Terlalu rendah!")
+            st.session_state.game_history.append(f"{guess} (Rendah)")
+        elif guess > secret:
+            st.warning("Terlalu tinggi!")
+            st.session_state.game_history.append(f"{guess} (Tinggi)")
+        else:
+            st.success(f"Benar! Angkanya {secret}. Ditebak dalam {st.session_state.game_attempts} percobaan.")
+            st.balloons()
+            # Reset game
+            st.session_state.game_secret_number = random.randint(1, 100)
+            st.session_state.game_attempts = 0
+            st.session_state.game_history = []
+    if st.session_state.get('game_history'):
+        st.write("Riwayat Tebakan:", ", ".join(st.session_state.game_history))
 
 # ==============================================================================
 # APLIKASI 4: GEOMETRI FRAKTAL (Tidak Ada Perubahan)
@@ -178,7 +199,7 @@ def run_fractal_app():
         st.plotly_chart(fig, use_container_width=True)
 
 # ==============================================================================
-# APLIKASI 5: PANEN BERKELANJUTAN (DIMODIFIKASI)
+# APLIKASI 5: PANEN BERKELANJUTAN (KODE DIPERBAIKI)
 # ==============================================================================
 def run_harvesting_app():
     st.title("🐄 Simulasi Panen Ternak Berkelanjutan")
@@ -189,19 +210,25 @@ def run_harvesting_app():
 
     with col2:
         st.subheader("⚙️ Atur Parameter")
-        p0 = st.slider("Populasi Awal (Ekor)", 10, 1000, 50, 10)
-        K = st.slider("Daya Tampung Lahan (K)", 100, 2000, 1000, 50, help="Jumlah maksimum ternak yang dapat didukung oleh lahan.")
-        r = st.slider("Laju Pertumbuhan (r)", 0.05, 1.0, 0.2, 0.05, format="%.2f", help="Laju pertumbuhan alami populasi per tahun.")
-        H = st.slider("Jumlah Panen per Tahun (H)", 0, 200, 40, 5, help="Jumlah ternak yang diambil/dipanen setiap tahun.")
+        p0 = st.slider("Populasi Awal (Ekor)", min_value=10, max_value=1000, value=50, step=10)
+        K = st.slider("Daya Tampung Lahan (K)", min_value=100, max_value=2000, value=1000, step=50, help="Jumlah maksimum ternak yang dapat didukung oleh lahan.")
+        r = st.slider("Laju Pertumbuhan (r)", min_value=0.05, max_value=1.0, value=0.2, step=0.05, format="%.2f", help="Laju pertumbuhan alami populasi per tahun.")
+        H = st.slider("Jumlah Panen per Tahun (H)", min_value=0, max_value=200, value=40, step=5, help="Jumlah ternak yang diambil/dipanen setiap tahun.")
     
     # --- SIMULASI ---
     years = 50
     population = [p0]
     for _ in range(1, years):
-        next_pop = population[-1] + r * population[-1] * (1 - population[-1] / K) - H
-        population.append(max(0, next_pop))
+        # Perhitungan populasi tahun berikutnya
+        last_pop = population[-1]
+        growth = r * last_pop * (1 - last_pop / K)
+        next_pop = last_pop + growth - H
+        population.append(max(0, next_pop)) # Pastikan populasi tidak negatif
     
     df_pop = pd.DataFrame({'Tahun': range(years), 'Populasi': population})
+    
+    # --- HITUNG REKOMENDASI SETELAH SLIDER DIBACA ---
+    msy = (r * K) / 4
 
     with col1:
         st.header("📈 Hasil Simulasi Populasi")
@@ -210,22 +237,21 @@ def run_harvesting_app():
         fig.update_layout(xaxis_title="Tahun", yaxis_title="Jumlah Ekor")
         st.plotly_chart(fig, use_container_width=True)
 
-        # --- PERUBAHAN: KESIMPULAN & REKOMENDASI LEBIH JELAS ---
         final_population = population[-1]
-        msy = (r * K) / 4 # Hasil Lestari Maksimum (Maximum Sustainable Yield)
 
         st.header("🎯 Status & Rekomendasi")
         
         # Analisis Status
-        if final_population <= 0:
+        if final_population <= 1: # Dianggap punah jika sisa 1 atau kurang
             st.error(f"**Status: Tidak Berkelanjutan.** Dengan tingkat panen {H} ekor per tahun, populasi ternak akan habis.")
         elif H > msy:
-            st.warning(f"**Status: Berisiko.** Tingkat panen Anda ({H} ekor/tahun) melebihi batas lestari maksimum, membuat populasi rentan.")
+            st.warning(f"**Status: Berisiko.** Tingkat panen Anda ({H} ekor/tahun) melebihi batas lestari maksimum. Populasi akan menurun dalam jangka panjang dan rentan punah.")
         else:
-            st.success(f"**Status: Berkelanjutan.** Tingkat panen Anda ({H} ekor/tahun) berada pada level yang aman dan populasi dapat bertahan.")
+            st.success(f"**Status: Berkelanjutan.** Tingkat panen Anda ({H} ekor/tahun) berada pada level yang aman dan populasi dapat bertahan atau bertumbuh.")
 
         # Rekomendasi Optimal
-        st.info(f"💡 **Rekomendasi panen optimal** agar populasi tetap lestari (MSY) adalah **{msy:,.0f} ekor/tahun**.")
+        st.info(f"💡 **Rekomendasi panen optimal** (MSY) untuk parameter ini adalah **{msy:,.0f} ekor/tahun**. Ini adalah jumlah panen terbanyak yang bisa dilakukan setiap tahun agar populasi tetap lestari dalam jangka panjang.")
+
 
 # ==============================================================================
 # NAVIGASI UTAMA APLIKASI
