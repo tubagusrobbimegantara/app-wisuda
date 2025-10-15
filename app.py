@@ -22,7 +22,49 @@ st.set_page_config(
 # ==============================================================================
 def run_game_app():
     # --- CSS Kustom untuk Tampilan Game Modern ---
-    st.markdown(""
+    st.markdown("""
+        <style>
+            .main > div { padding-top: 2rem; }
+            .block-container { padding-top: 2rem; }
+            .game-container {
+                background: linear-gradient(145deg, #2b2b2b, #1e1e1e);
+                padding: 2rem; border-radius: 20px;
+                box-shadow: 10px 10px 20px #1c1c1c, -10px -10px 20px #2e2e2e;
+                color: #e0e0e_0;
+                min-height: 250px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+            .stNumberInput input {
+                background-color: #333; color: #fff; border: 2px solid #555;
+                border-radius: 10px; text-align: center; font-size: 2rem; font-weight: bold;
+            }
+            .stButton>button {
+                background: linear-gradient(145deg, #00d4ff, #009de0); color: white; font-weight: bold;
+                border: none; border-radius: 12px; padding: 12px 24px; width: 100%;
+                box-shadow: 5px 5px 10px #1c1c1c, -5px -5px 10px #2e2e2e;
+                transition: all 0.2s ease-in-out;
+            }
+            .stButton>button:hover {
+                transform: scale(1.05);
+                box-shadow: 7px 7px 15px #1c1c1c, -7px -7px 15px #2e2e2e;
+            }
+            .score-box {
+                background-color: #252525; text-align: center; padding: 1rem;
+                border-radius: 15px; border: 1px solid #444;
+            }
+            .game-message {
+                text-align: center;
+                font-size: 1.2rem;
+                font-weight: bold;
+                padding: 1rem;
+                border-radius: 10px;
+                margin-bottom: 1rem;
+                color: #e0e0e0;
+            }
+        </style>
+    """, unsafe_allow_html=True)
 
     if 'secret_number' not in st.session_state:
         st.session_state.secret_number = random.randint(1, 100)
@@ -208,8 +250,7 @@ def run_harvesting_app():
             st.warning(f"**Status: Berisiko.** Tingkat panen Anda ({H} ekor/tahun) melebihi batas lestari maksimum. Populasi akan menurun dalam jangka panjang dan rentan punah.")
         else:
             st.success(f"**Status: Berkelanjutan.** Tingkat panen Anda ({H} ekor/tahun) berada pada level yang aman dan populasi dapat bertahan atau bertumbuh.")
-        st.info(f"💡 **Rekomendasi panen optimal** (MSY) untuk parameter ini adalah **{msy:,.0f} ekor/tahun**. Ini adalah jumlah panen terbanyak yang bisa dilakukan setiap tahun agar populasi tetap lestari dalam jangka panjang.")
-
+        
 # ==============================================================================
 # APLIKASI 4: GEOMETRI FRAKTAL
 # ==============================================================================
