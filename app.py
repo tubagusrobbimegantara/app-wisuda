@@ -177,8 +177,8 @@ def run_portfolio_app():
             return pd.DataFrame()
 
     def calculate_portfolio_stats(weights, mean_returns, cov_matrix):
-        returns = np.sum(mean_returns * weights) * 252
-        volatility = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights))) * np.sqrt(252)
+        returns = np.sum(mean_returns * weights)
+        volatility = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
         return returns, volatility
 
     def run_monte_carlo(mean_returns, cov_matrix, num_portfolios):
@@ -255,8 +255,8 @@ def run_portfolio_app():
 
                     total_return = (last_val / first_val) - 1
                     trading_days = len(returns_series)
-                    annualized_return = (1 + total_return)**(252/trading_days) - 1 if trading_days > 0 else 0
-                    annualized_volatility = returns_series.std() * np.sqrt(252)
+                    annualized_return = (1 + total_return)
+                    annualized_volatility = returns_series.std()
                     
                     return {
                         "Nilai Akhir": f"Rp {last_val:,.0f}",
