@@ -243,20 +243,19 @@ def run_harvesting_app():
             st.success(f"**Status: Berkelanjutan.** Tingkat panen Anda ({H} ekor/tahun) berada pada level yang aman dan populasi dapat bertahan atau bertumbuh.")
         
 # ==============================================================================
-# APLIKASI 4: GEOMETRI FRAKTAL (KODE DISEMPURNAKAN)
+# APLIKASI 4: GEOMETRI FRAKTAL (KODE DISEMPURNAKAN & TATA LETAK DIUBAH)
 # ==============================================================================
 def run_fractal_app():
     st.title("🎨 Eksplorasi Fraktal Interaktif")
     st.markdown("Jelajahi pola **fraktal klasik dan modern** yang muncul dari aturan sederhana namun menghasilkan keindahan kompleks ✨.")
     
-    col1, col2 = st.columns([1, 1])
+    col_plot, col_settings = st.columns([3, 1]) # Kolom untuk plot (kiri, lebih besar) dan settings (kanan, lebih kecil)
 
-    with col1:
+    with col_settings: # Pengaturan di kolom kanan
         fractal_type = st.selectbox(
             "🌀 Pilih Jenis Fraktal",
             ("Segitiga Sierpinski", "Pohon Fraktal", "Koch Snowflake", "Dragon Curve", "Kapal Terbakar", "Mandelbrot Klasik")
         )
-    with col2:
         # Slider Cerdas yang menyesuaikan rentang nilai
         if fractal_type in ["Mandelbrot Klasik", "Kapal Terbakar"]:
             iterations = st.slider("🔁 Jumlah Iterasi", 20, 300, 75, 10)
@@ -308,42 +307,59 @@ def run_fractal_app():
                 if depth == 0: return [p1, p2]
                 p1, p2 = np.array(p1), np.array(p2); delta = (p2 - p1) / 3
                 pA, pB = p1 + delta, p1 + 2 * delta
-                pC = pA + np.array([delta[0] * 0.5 - delta[1] * 0.866, delta[0] * 0.866 + delta[1] * 0.5])
+                pC = pA + np.array([delta[0] * 0.5 - delta[1] * 0.866, delta[0] * 0.866 + delta[1] * 0.5]) # Rotasi 60 derajat
                 return koch_curve(p1, pA, depth - 1)[:-1] + koch_curve(pA, pC, depth - 1)[:-1] + koch_curve(pC, pB, depth - 1)[:-1] + koch_curve(pB, p2, depth - 1)
-            p1, p2, p3 = [0, 0.288], [1, 0.288], [0.5, 1.154]
-            points = koch_curve(p1, p2, max_iter)[:-1] + koch_curve(p2, p3, max_iter)[:-1] + koch_curve(p3, p1, max_iter)[:-1]
+            # Koordinat titik awal segitiga sama sisi, diskalakan dan digeser agar terlihat bagus
+            side_length = 0.8
+            offset_y = 0.1
+            p1_koch = np.array([0.1, 0.288]) + np.array([0, offset_y])
+            p2_koch = np.array([0.9, 0.288]) + np.array([0, offset_y])
+            p3_koch = np.array([0.5, 0.288 + side_length * math.sqrt(3)/2]) + np.array([0, offset_y])
+            
+            points = koch_curve(p1_koch, p2_koch, max_iter)[:-1] + \
+                     koch_curve(p2_koch, p3_koch, max_iter)[:-1] + \
+                     koch_curve(p3_koch, p1_koch, max_iter)[:-1]
             return "lines", np.array(points)
 
         elif type == "Pohon Fraktal":
             lines = []
             def draw_tree(x1, y1, angle, depth):
                 if depth > 0:
-                    x2 = x1 + math.cos(math.radians(angle)) * depth * 10.0
-                    y2 = y1 + math.sin(math.radians(angle)) * depth * 10.0
+                    # Skala panjang ranting agar ranting yang lebih dalam lebih pendek
+                    length = depth * 10.0 
+                    x2 = x1 + math.cos(math.radians(angle)) * length
+                    y2 = y1 + math.sin(math.radians(angle)) * length
                     lines.append(((x1, y1), (x2, y2)))
                     draw_tree(x2, y2, angle - 25, depth - 1) # Sudut diubah agar lebih menarik
                     draw_tree(x2, y2, angle + 25, depth - 1)
-            draw_tree(width // 2, 0, 90, max_iter)
+            # Mulai pohon dari bagian bawah tengah gambar
+            draw_tree(width // 2, height - 50, -90, max_iter) # y1 diubah ke bawah
             return "segments", lines
     
-    with st.spinner(f"🧠 Membuat '{fractal_type}'..."):
-        width, height = 800, 800
-        render_mode, data = generate_fractal(width, height, iterations, fractal_type)
-        fig = go.Figure()
+    with col_plot: # Gambar di kolom kiri
+        with st.spinner(f"🧠 Membuat '{fractal_type}'..."):
+            width, height = 800, 800
+            render_mode, data = generate_fractal(width, height, iterations, fractal_type)
+            fig = go.Figure()
 
-        if render_mode == "heatmap":
-            fig.add_trace(go.Heatmap(z=data, colorscale='Plasma', showscale=False))
-        elif render_mode == "lines":
-            fig.add_trace(go.Scatter(x=data[:, 0], y=data[:, 1], mode='lines', line=dict(color='cyan', width=1.5)))
-        elif render_mode == "segments":
-            all_x, all_y = [], []
-            for (x1, y1), (x2, y2) in data:
-                all_x.extend([x1, x2, None])
-                all_y.extend([y1, y2, None])
-            fig.add_trace(go.Scatter(x=all_x, y=all_y, mode='lines', line=dict(color='lightgreen', width=1.5)))
-        
-        fig.update_layout(title=f"Fraktal: {fractal_type}", xaxis_visible=False, yaxis_visible=False, height=600, template='plotly_dark', showlegend=False)
-        st.plotly_chart(fig, use_container_width=True)
+            if render_mode == "heatmap":
+                fig.add_trace(go.Heatmap(z=data, colorscale='Plasma', showscale=False))
+                fig.update_yaxes(autorange="reversed") # Agar asal di kiri atas
+            elif render_mode == "lines":
+                fig.add_trace(go.Scatter(x=data[:, 0], y=data[:, 1], mode='lines', line=dict(color='cyan', width=1.5)))
+                # Auto-scale sumbu untuk fraktal garis
+                fig.update_layout(xaxis=dict(scaleanchor="y", scaleratio=1), yaxis=dict(scaleanchor="x", scaleratio=1))
+            elif render_mode == "segments":
+                all_x, all_y = [], []
+                for (x1, y1), (x2, y2) in data:
+                    all_x.extend([x1, x2, None])
+                    all_y.extend([y1, y2, None])
+                fig.add_trace(go.Scatter(x=all_x, y=all_y, mode='lines', line=dict(color='lightgreen', width=1.5)))
+                # Auto-scale sumbu untuk fraktal garis
+                fig.update_layout(xaxis=dict(scaleanchor="y", scaleratio=1), yaxis=dict(scaleanchor="x", scaleratio=1))
+            
+            fig.update_layout(title=f"Fraktal: {fractal_type}", xaxis_visible=False, yaxis_visible=False, height=600, template='plotly_dark', showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)
 
 # ==============================================================================
 # NAVIGASI UTAMA APLIKASI
