@@ -322,6 +322,54 @@ def run_harvesting_app():
 # ==============================================================================
 def run_fractal_app():
     st.title("🎨 Eksplorasi Fraktal Interaktif")
+
+    st.markdown(r"""
+    ### 🧮 Teori & Model Matematika Fraktal
+    
+    **Fraktal** adalah objek geometris yang menunjukkan **pola pengulangan diri (self-similarity)** di berbagai skala.
+    Artinya, jika kita memperbesar sebagian kecil dari fraktal, bentuknya tetap menyerupai keseluruhan struktur aslinya.
+
+    Secara umum, fraktal dibangun melalui **iterasi** atau **rekursi**, yaitu penerapan berulang suatu aturan geometris.
+    Dalam bentuk paling umum:
+    $$
+    F_{n+1} = T(F_n)
+    $$
+    di mana $T$ adalah transformasi (rotasi, penskalaan, translasi, atau kombinasi afine) yang diterapkan berulang.
+
+    #### Jenis Fraktal yang Didukung:
+    - 🟣 **Segitiga Sierpinski** — dibentuk dengan memilih titik tengah secara acak di antara tiga simpul segitiga utama.  
+      Rumus iteratif:  
+      $$
+      P_{n+1} = \frac{P_n + V_i}{2}, \quad V_i \in \{A, B, C\}
+      $$
+
+    - 🌳 **Pohon Fraktal** — dibangun rekursif dari batang utama dengan percabangan pada sudut tetap.  
+      Setiap ranting baru memiliki panjang lebih pendek dari induknya.
+
+    - ❄️ **Koch Snowflake** — dimulai dari segitiga sama sisi; tiap sisi dibagi tiga, bagian tengah diganti dengan tonjolan segitiga baru.  
+      Pola rekursi ini menciptakan perimeter tak hingga dengan luas hingga.
+
+    - 🐉 **Dragon Curve** — dibentuk dari aturan *L-System*:  
+      ```
+      X → X+YF+
+      Y → -FX-Y
+      ```
+      yang menghasilkan kurva berlipat dengan simetri kompleks.
+
+    - 🔥 **Kapal Terbakar (Burning Ship)** — varian dari Mandelbrot yang menggunakan nilai absolut:  
+      $$
+      z_{n+1} = (|\Re(z_n)| + i|\Im(z_n)|)^2 + c
+      $$
+
+    - 🌌 **Mandelbrot Klasik** — fraktal paling terkenal yang ditentukan oleh:
+      $$
+      z_{n+1} = z_n^2 + c, \quad z_0 = 0
+      $$
+      Sebuah titik $c$ termasuk dalam himpunan Mandelbrot jika deret $(z_n)$ tidak divergen.
+    
+    Fraktal banyak digunakan dalam **grafika komputer, pemodelan bentuk alam (awan, gunung, garis pantai)**, serta dalam teori chaos dan sistem dinamis.
+    """)
+    
     st.markdown("Jelajahi pola **fraktal klasik dan modern** yang muncul dari aturan sederhana namun menghasilkan keindahan kompleks ✨.")
     
     col_plot, col_settings = st.columns([3, 1]) # Kolom untuk plot (kiri, lebih besar) dan settings (kanan, lebih kecil)
