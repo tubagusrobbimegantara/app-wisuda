@@ -456,7 +456,7 @@ def run_fractal_app():
                     draw_tree(x2, y2, angle - 25, depth - 1) # Sudut diubah agar lebih menarik
                     draw_tree(x2, y2, angle + 25, depth - 1)
             # Mulai pohon dari bagian bawah tengah gambar
-            draw_tree(width // 2, height - 50, 90, max_iter) # y1 diubah ke bawah
+            draw_tree(width // 2, height - 50, -90, max_iter) # y1 diubah ke bawah
             return "segments", lines
     
     with col_plot: # Gambar di kolom kiri
