@@ -127,6 +127,45 @@ def run_game_app():
 # ==============================================================================
 def run_portfolio_app():
     st.title("📈 Analisis & Backtesting Portofolio Saham")
+    
+    st.markdown("""
+    ### 🧮 Teori Model Matematika
+    
+    Aplikasi ini menggunakan prinsip **Optimisasi Portofolio Mean-Variance** 
+    yang diperkenalkan oleh **Harry Markowitz (1952)** dalam teori portofolio modern (Modern Portfolio Theory).
+    
+    Tujuan utama model ini adalah **menyeimbangkan risiko dan imbal hasil (risk-return trade-off)** 
+    melalui kombinasi bobot aset yang optimal.
+    
+    Secara matematis, untuk $n$ aset dengan return rata-rata $\\mu_i$ dan kovarians $\\Sigma_{ij}$:
+    
+    $$
+    \\begin{aligned}
+    \\text{Maksimalkan} \\quad & E[R_p] = \\sum_{i=1}^{n} w_i \\mu_i \\\\
+    \\text{dengan risiko} \\quad & \\sigma_p^2 = w^T \\Sigma w \\\\
+    \\text{dan kendala} \\quad & \\sum_{i=1}^{n} w_i = 1, \\quad w_i \\ge 0
+    \\end{aligned}
+    $$
+    
+    Rasio **Sharpe Ratio (William Sharpe, 1966)** digunakan sebagai ukuran efisiensi portofolio:
+    
+    $$
+    S = \\frac{E[R_p] - R_f}{\\sigma_p}
+    $$
+    
+    di mana:
+    - $E[R_p]$ : return ekspektasi portofolio  
+    - $R_f$ : tingkat bebas risiko (diasumsikan 0 dalam simulasi ini)  
+    - $\\sigma_p$ : volatilitas (risiko) portofolio  
+    
+    Untuk menemukan kombinasi terbaik, digunakan metode **Simulasi Monte Carlo**, 
+    yaitu menghasilkan ribuan kombinasi bobot acak $w_i$ yang memenuhi $\\sum w_i = 1$, 
+    lalu memilih kombinasi dengan **Sharpe Ratio tertinggi**.
+    
+    Setelah portofolio optimal diperoleh berdasarkan data historis **(In-Sample)**, 
+    performanya diuji terhadap data **(Out-of-Sample)** dan dibandingkan dengan indeks acuan **IHSG**.
+    """)
+    
     st.markdown("Aplikasi ini mengoptimalkan alokasi portofolio pada data **In-Sample (2015-2023)** dan menguji kinerjanya pada data **Out-of-Sample (2024-sekarang)** dengan membandingkannya terhadap **IHSG**.")
     st.write("---")
     LQ45_TICKERS = sorted(["ACES.JK", "ADRO.JK", "AKRA.JK", "AMMN.JK", "AMRT.JK", "ARTO.JK", "ASII.JK", "BBCA.JK", "BBNI.JK", "BBRI.JK", "BMRI.JK", "BRIS.JK", "BRPT.JK", "BUKA.JK", "CPIN.JK", "EMTK.JK", "ESSA.JK", "EXCL.JK", "GGRM.JK", "GOTO.JK", "HRUM.JK", "ICBP.JK", "INCO.JK", "INDF.JK", "INDY.JK", "INKP.JK", "INTP.JK", "ITMG.JK", "JSMR.JK", "KLBF.JK", "MAPI.JK", "MBMA.JK", "MDKA.JK", "MEDC.JK", "PGAS.JK", "PGEO.JK", "PTBA.JK", "SMGR.JK", "SRTG.JK", "TLKM.JK", "TPIA.JK", "UNTR.JK", "UNVR.JK"])
