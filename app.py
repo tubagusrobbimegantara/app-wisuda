@@ -451,12 +451,12 @@ def run_fractal_app():
                     # Skala panjang ranting agar ranting yang lebih dalam lebih pendek
                     length = depth * 10.0 
                     x2 = x1 + math.cos(math.radians(angle)) * length
-                    y2 = y1 + math.sin(math.radians(angle)) * length
+                    y2 = y1 - math.sin(math.radians(angle)) * length
                     lines.append(((x1, y1), (x2, y2)))
                     draw_tree(x2, y2, angle - 25, depth - 1) # Sudut diubah agar lebih menarik
                     draw_tree(x2, y2, angle + 25, depth - 1)
             # Mulai pohon dari bagian bawah tengah gambar
-            draw_tree(width // 2, height - 50, -90, max_iter) # y1 diubah ke bawah
+            draw_tree(width // 2, height - 50, 90, max_iter) # y1 diubah ke bawah
             return "segments", lines
     
     with col_plot: # Gambar di kolom kiri
