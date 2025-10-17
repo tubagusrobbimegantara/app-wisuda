@@ -210,6 +210,42 @@ def run_portfolio_app():
 def run_harvesting_app():
     st.title("🐄 Simulasi Panen Ternak Berkelanjutan")
     st.markdown("Aplikasi ini mensimulasikan dampak panen tahunan terhadap populasi ternak. Gunakan model ini untuk menentukan apakah tingkat panen Anda berkelanjutan atau akan menyebabkan kepunahan.")
+    st.markdown("""
+    ### 🧮 Teori Model Matematika
+    
+    Model yang digunakan pada simulasi ini adalah **model logistik dengan panen konstan**, 
+    yang secara umum dinyatakan dengan persamaan diferensial berikut:
+    
+    $$
+    \\frac{dP}{dt} = rP\\left(1 - \\frac{P}{K}\\right) - H
+    $$
+    
+    di mana:
+    
+    - $P(t)$ : populasi ternak pada waktu $t$  
+    - $r$ : laju pertumbuhan alami populasi  
+    - $K$ : daya tampung maksimum lingkungan (*carrying capacity*)  
+    - $H$ : tingkat panen tetap (jumlah ternak yang diambil setiap tahun)
+    
+    Tanpa panen ($H = 0$), populasi akan bertumbuh secara **logistik** hingga mencapai $K$.  
+    Namun, dengan adanya panen, populasi dapat:
+    
+    - **Stabil dan berkelanjutan**, jika $H$ lebih kecil dari batas lestari maksimum  
+    - **Menurun perlahan**, jika $H$ mendekati batas kritis  
+    - **Pun⟨ah**, jika $H$ terlalu besar (melebihi kapasitas regenerasi populasi)
+    
+    Nilai panen maksimum berkelanjutan (*Maximum Sustainable Yield*, MSY) diperoleh ketika:
+    
+    $$
+    H_{msy} = \\frac{rK}{4}
+    $$
+    
+    Aplikasi ini menggunakan bentuk **diskretisasi tahunan** dari model tersebut untuk mensimulasikan 
+    perubahan populasi selama beberapa tahun ke depan.
+    """)
+    
+    st.markdown("Aplikasi ini mensimulasikan dampak panen tahunan terhadap populasi ternak. Gunakan model ini untuk menentukan apakah tingkat panen Anda berkelanjutan atau akan menyebabkan kepunahan.")
+    
     st.write("---")
     col1, col2 = st.columns([2, 1])
     with col2:
