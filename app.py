@@ -163,9 +163,9 @@ def run_portfolio_app():
                 mc_results, mc_weights = run_monte_carlo(mean_returns, cov_matrix, 5000)
                 sharpe_ratios = mc_results[0] / mc_results[1]
                 optimal_weights = np.array(mc_weights[np.argmax(sharpe_ratios)])
-                df_alokasi = pd.DataFrame({"Saham": in_sample_data.columns, "Bobot": optimal_weights}).query("Bobot > 0.001").sort_values("Bobot", ascending=False)
+                df_alokasi = pd.DataFrame({"Saham": in_sample_data.columns, "Bobot": optimal_weights, "Alokasi_Dana": optimal_weights*modal}).query("Bobot > 0.001").sort_values("Bobot", ascending=False)
                 st.info("Alokasi portofolio optimal ditemukan berdasarkan Sharpe Ratio tertinggi.")
-                st.dataframe(df_alokasi.assign(Bobot=lambda x: x['Bobot'].map('{:.2%}'.format)), use_container_width=True)
+                st.dataframe(df_alokasi.assign(Bobot=lambda x: x['Bobot'].map('{:.2%}'.format), Alokasi_Dana=lambda x: x['Alokasi_Dana'].map('Rp{:,.0f}'.format)), use_container_width=True)
             st.markdown("---")
             st.header("2. Performa Portofolio (Out-of-Sample: 2024-Sekarang)")
             with st.spinner("Menguji portofolio dan membandingkan dengan IHSG..."):
