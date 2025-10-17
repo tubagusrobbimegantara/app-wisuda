@@ -149,7 +149,7 @@ def run_portfolio_app():
         return results, weights_record
     st.subheader("⚙️ Masukkan Parameter Analisis")
     col1, col2 = st.columns([3, 1])
-    with col1: selected_tickers = st.multiselect("1. Pilih Saham LQ45 (minimal 2)", options=LQ45_TICKERS, default=["BBCA.JK", "TLKM.JK", "BMRI.JK", "ASII.JK"])
+    with col1: selected_tickers = st.multiselect("1. Pilih Saham LQ45 (minimal 2)", options=LQ45_TICKERS, default=["ACES.JK", "ADRO.JK", "AKRA.JK", "AMMN.JK", "AMRT.JK", "ARTO.JK", "ASII.JK", "BBCA.JK", "BBNI.JK", "BBRI.JK", "BMRI.JK", "BRIS.JK", "BRPT.JK", "BUKA.JK", "CPIN.JK", "EMTK.JK", "ESSA.JK", "EXCL.JK", "GGRM.JK", "GOTO.JK", "HRUM.JK", "ICBP.JK", "INCO.JK", "INDF.JK", "INDY.JK", "INKP.JK", "INTP.JK", "ITMG.JK", "JSMR.JK", "KLBF.JK", "MAPI.JK", "MBMA.JK", "MDKA.JK", "MEDC.JK", "PGAS.JK", "PGEO.JK", "PTBA.JK", "SMGR.JK", "SRTG.JK", "TLKM.JK", "TPIA.JK", "UNTR.JK", "UNVR.JK"])
     with col2: modal = st.number_input("2. Modal Awal (Rp)", min_value=1_000_000, step=1_000_000, value=100_000_000)
     if st.button("🚀 Hitung & Uji Portofolio", type="primary", use_container_width=True):
         if len(selected_tickers) < 2: st.error("Mohon pilih minimal 2 saham.")
